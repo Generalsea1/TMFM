@@ -1,6 +1,7 @@
 package com.generalsea1.debaradio
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -280,6 +281,8 @@ class RecordingService : Service() {
     }
 
     @RequiresApi(29)
+    @androidx.annotation.RequiresPermission(Manifest.permission.RECORD_AUDIO)
+    @SuppressLint("MissingPermission")
     private fun createAudioRecord(projection: MediaProjection): Triple<AudioRecord, Int, Int> {
         val attempts = listOf(
             Triple(44_100, AudioFormat.CHANNEL_IN_STEREO, 2),
