@@ -6,33 +6,66 @@ import org.json.JSONArray
 import java.net.HttpURLConnection
 import java.net.URI
 
-class RadioRepository {
+class RadioRepository(
+    private val radioBrowser: RadioBrowserClient = RadioBrowserClient()
+) {
 
     suspend fun fetchStations(): List<RadioStation> = withContext(Dispatchers.IO) {
-        val uri = URI.create(
-            SupabaseConfig.BASE_URL +
-                "/rest/v1/radio_stations" +
-                "?select=id,name,country_code,country_name,city,frequency_mhz,band,stream_url,stream_type,official_url,language,category,is_hardware,is_online,is_verified,verification_status,last_verified" +
-                "&is_verified=eq.true&is_online=eq.true&order=sort_order.asc,name.asc"
-        )
+        val verified = runCatching { fetchSupabaseStations() }
+            .getOrElse { emptyList() }
 
-        val connection = (uri.toURL().openConnection() as HttpURLConnection).apply {
-            requestMethod = "GET"
-            connectTimeout = 8_000
-            readTimeout = 10_000
-            setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
-            setRequestProperty("Accept", "application/json")
-        }
+        val directory = runCatching {
+            radioBrowser.fetchPopularByCountry("EG", 120)
+        }.getOrElse { emptyList() }
 
-        try {
-            if (connection.responseCode !in 200..299) {
-                error("Catalog HTTP " + connection.responseCode)
+        mergeStations(verified, directory).ifEmpty {
+            if (verified.isEmpty() && directory.isEmpty()) {
+                error("تعذر تحميل أي دليل محطات حاليًا.")
             }
-            parseStations(connection.inputStream.bufferedReader().use { it.readText() })
-        } finally {
-            connection.disconnect()
+            verified
         }
     }
+
+    suspend fun searchStations(query: String): List<RadioStation> {
+        val local = fetchSupabaseStations()
+        val remote = radioBrowser.search(query.trim(), limit = 100)
+        return mergeStations(local, remote)
+    }
+
+    suspend fun markRadioBrowserClick(stationId: String) {
+        if (stationId.startsWith("rb-")) {
+            radioBrowser.countClick(stationId)
+        }
+    }
+
+    private suspend fun fetchSupabaseStations(): List<RadioStation> =
+        withContext(Dispatchers.IO) {
+            val uri = URI.create(
+                SupabaseConfig.BASE_URL +
+                    "/rest/v1/radio_stations" +
+                    "?select=id,name,country_code,country_name,city,frequency_mhz,band,stream_url,stream_type,official_url,logo_url,language,category,is_hardware,is_online,is_verified,verification_status,last_verified" +
+                    "&is_verified=eq.true&is_online=eq.true&order=sort_order.asc,name.asc"
+            )
+
+            val connection = (uri.toURL().openConnection() as HttpURLConnection).apply {
+                requestMethod = "GET"
+                connectTimeout = 8_000
+                readTimeout = 10_000
+                setRequestProperty("apikey", SupabaseConfig.PUBLISHABLE_KEY)
+                setRequestProperty("Accept", "application/json")
+            }
+
+            try {
+                if (connection.responseCode !in 200..299) {
+                    error("Catalog HTTP " + connection.responseCode)
+                }
+                parseStations(
+                    connection.inputStream.bufferedReader().use { it.readText() }
+                )
+            } finally {
+                connection.disconnect()
+            }
+        }
 
     private fun parseStations(raw: String): List<RadioStation> {
         val json = JSONArray(raw)
@@ -51,6 +84,7 @@ class RadioRepository {
                         streamUrl = o.optString("stream_url").takeIf { it.isNotBlank() },
                         streamType = o.optString("stream_type").takeIf { it.isNotBlank() },
                         officialUrl = o.optString("official_url").takeIf { it.isNotBlank() },
+                        logoUrl = o.optString("logo_url").takeIf { it.isNotBlank() },
                         language = o.optString("language").takeIf { it.isNotBlank() },
                         category = o.optString("category").takeIf { it.isNotBlank() },
                         isHardware = o.optBoolean("is_hardware", false),
@@ -62,5 +96,19 @@ class RadioRepository {
                 )
             }
         }
+    }
+
+    private fun mergeStations(
+        first: List<RadioStation>,
+        second: List<RadioStation>
+    ): List<RadioStation> {
+        val merged = LinkedHashMap<String, RadioStation>()
+        first.forEach { merged[it.id] = it }
+        second.forEach { station ->
+            if (station.streamUrl != null && !merged.containsKey(station.id)) {
+                merged[station.id] = station
+            }
+        }
+        return merged.values.toList()
     }
 }
