@@ -36,7 +36,7 @@ object HardwareRadioProbe {
                     val bands = module.javaClass
                         .getMethod("getBands")
                         .invoke(module) as? Array<*>
-                        ?: emptyArray()
+                        ?: emptyArray<Any?>()
 
                     bands.forEach { band ->
                         val type = band?.javaClass?.getMethod("getType")?.invoke(band) as? Int
