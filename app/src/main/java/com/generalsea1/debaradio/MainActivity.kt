@@ -1,18 +1,12 @@
 package com.generalsea1.tmfm
 
-import android.Manifest
-import android.app.Activity
 import android.content.ComponentName
 import android.content.Intent
-import android.content.pm.PackageManager
-import android.media.projection.MediaProjectionManager
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.media3.common.MediaItem
@@ -25,37 +19,10 @@ import java.io.File
 class MainActivity : ComponentActivity() {
     private var controllerFuture: ListenableFuture<MediaController>? = null
     private var controller: MediaController? = null
-    private var pendingRecordStation: RadioStation? = null
-
-    private val recordPermissionLauncher =
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-            if (granted) launchProjectionPermission()
-            else {
-                pendingRecordStation = null
-                toast("يلزم السماح بتسجيل الصوت حتى يستطيع TMFM تسجيل تشغيله الفعلي.")
-            }
-        }
-
-    private val projectionLauncher =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
-            val station = pendingRecordStation
-            pendingRecordStation = null
-            if (result.resultCode != Activity.RESULT_OK || result.data == null || station == null) return@registerForActivityResult
-
-            val intent = Intent(this, RecordingService::class.java)
-                .setAction(RecordingService.ACTION_START)
-                .putExtra(RecordingService.EXTRA_RESULT_CODE, result.resultCode)
-                .putExtra(RecordingService.EXTRA_RESULT_DATA, result.data)
-                .putExtra(RecordingService.EXTRA_STATION_ID, station.id)
-                .putExtra(RecordingService.EXTRA_STATION_NAME, station.name)
-                .putExtra(RecordingService.EXTRA_FREQUENCY, station.frequencyMhz)
-
-            ContextCompat.startForegroundService(this, intent)
-            toast("بدأ تسجيل TMFM: " + station.name)
-        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         val token = SessionToken(this, ComponentName(this, PlaybackService::class.java))
         controllerFuture = MediaController.Builder(this, token).buildAsync()
         controllerFuture?.addListener(
@@ -70,7 +37,8 @@ class MainActivity : ComponentActivity() {
                 onRecordRequested = ::requestRecording,
                 onPlayRecording = ::playRecording,
                 onShareRecording = ::shareRecording,
-                onSleepRequested = ::setSleepTimer
+                onSleepRequested = ::setSleepTimer,
+                onOpenSystemFm = ::openSystemFm
             )
         }
     }
@@ -80,12 +48,26 @@ class MainActivity : ComponentActivity() {
             toast("مشغل TMFM لم يجهز بعد.")
             return
         }
-        val url = station.streamUrl
-        if (url.isNullOrBlank()) {
-            toast("هذا السجل تردد/دليل فقط ولا يملك بث إنترنت موثقًا داخل TMFM.")
+
+        if (!station.internetPlayable) {
+            toast(
+                when (station.classification()) {
+                    StationClassification.VERIFIED_FREQUENCY ->
+                        "هذا تردد FM موثّق، لكن تشغيله داخل TMFM يحتاج وصول tuner حقيقي."
+                    StationClassification.OFFLINE ->
+                        "المحطة غير متاحة حاليًا."
+                    StationClassification.UNVERIFIED ->
+                        "رابط البث غير موثّق بعد؛ لن يشغّل TMFM رابطًا غير مثبت."
+                    StationClassification.DIRECTORY_REFERENCE ->
+                        "هذا سجل دليل فقط ولا يوجد بث إنترنت موثّق."
+                    StationClassification.PLAYABLE_INTERNET ->
+                        "البث غير متاح حاليًا."
+                }
+            )
             return
         }
 
+        val url = station.streamUrl ?: return
         val item = MediaItem.Builder()
             .setMediaId(station.id)
             .setUri(url)
@@ -104,33 +86,27 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun requestRecording(station: RadioStation) {
-        if (Build.VERSION.SDK_INT < 29) {
-            toast("تسجيل تشغيل الإنترنت يحتاج Android 10 أو أحدث.")
-            return
-        }
-        if (station.streamUrl.isNullOrBlank()) {
-            toast("لا يمكن تسجيل محطة لا تملك مسار بث إنترنت متاحًا.")
+        if (!station.internetPlayable) {
+            toast("التسجيل متاح فقط للبث الذي أثبته TMFM فعليًا.")
             return
         }
 
-        play(station)
-        pendingRecordStation = station
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
-            recordPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
-        } else {
-            launchProjectionPermission()
-        }
+        val intent = Intent(this, RecordingService::class.java)
+            .setAction(RecordingService.ACTION_START)
+            .putExtra(RecordingService.EXTRA_STATION_ID, station.id)
+            .putExtra(RecordingService.EXTRA_STATION_NAME, station.name)
+            .putExtra(RecordingService.EXTRA_FREQUENCY, station.frequencyMhz)
+            .putExtra(RecordingService.EXTRA_STREAM_URL, station.streamUrl)
+            .putExtra(RecordingService.EXTRA_STREAM_TYPE, station.streamType)
+
+        ContextCompat.startForegroundService(this, intent)
+        toast("بدأ تسجيل TMFM: " + station.name)
     }
 
-    private fun launchProjectionPermission() {
-        if (pendingRecordStation == null) return
-        val manager = getSystemService(MEDIA_PROJECTION_SERVICE) as MediaProjectionManager
-        if (Build.VERSION.SDK_INT >= 29) {
-            projectionLauncher.launch(manager.createScreenCaptureIntent())
-        } else {
-            pendingRecordStation = null
-            toast("هذه الوظيفة غير مدعومة على هذا الإصدار.")
-        }
+    private fun openSystemFm() {
+        SystemRadioLauncher.open(this)
+            .onSuccess { label -> toast("تم فتح: " + label) }
+            .onFailure { toast(it.message ?: "لا يوجد راديو FM نظامي متاح.") }
     }
 
     private fun playRecording(recording: RecordingEntity) {
@@ -139,6 +115,7 @@ class MainActivity : ComponentActivity() {
             toast("ملف التسجيل غير موجود.")
             return
         }
+
         val c = controller ?: run {
             toast("مشغل TMFM لم يجهز بعد.")
             return
@@ -170,7 +147,7 @@ class MainActivity : ComponentActivity() {
         startActivity(
             Intent.createChooser(
                 Intent(Intent.ACTION_SEND)
-                    .setType("audio/mp4")
+                    .setType(recording.mimeTypeOrDefault())
                     .putExtra(Intent.EXTRA_STREAM, uri)
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION),
                 "مشاركة تسجيل TMFM"
@@ -201,4 +178,11 @@ class MainActivity : ComponentActivity() {
         controllerFuture = null
         super.onDestroy()
     }
+}
+
+private fun RecordingEntity.mimeTypeOrDefault(): String = when {
+    filePath.endsWith(".mp3", true) -> "audio/mpeg"
+    filePath.endsWith(".aac", true) -> "audio/aac"
+    filePath.endsWith(".ts", true) -> "video/mp2t"
+    else -> "audio/mp4"
 }
