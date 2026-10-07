@@ -41,6 +41,8 @@ class PlaybackService : MediaSessionService() {
         mediaSession = builder.build()
     }
 
+    override fun onGetSession(controllerInfo: ControllerInfo): MediaSession? = mediaSession
+
     override fun onStartCommand(intent: android.content.Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_SET_SLEEP_TIMER -> scheduleSleep(intent.getIntExtra(EXTRA_SLEEP_MINUTES, 0))
