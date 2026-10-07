@@ -1,4 +1,4 @@
-# TMFM — DEBA Radio
+# TMFM — Radio
 
 Android radio application built in Kotlin + Jetpack Compose + Media3.
 
