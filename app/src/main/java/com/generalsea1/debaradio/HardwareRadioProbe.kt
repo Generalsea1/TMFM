@@ -32,7 +32,7 @@ object HardwareRadioProbe {
             )
         }
 
-        val permissionState = context.checkSelfPermission(Manifest.permission.ACCESS_BROADCAST_RADIO)
+        val permissionState = context.checkSelfPermission(HARDWARE_RADIO_PERMISSION)
         if (permissionState != PackageManager.PERMISSION_GRANTED) {
             return unavailable(
                 HardwareRadioAvailability.NOT_AUTHORIZED,
@@ -107,6 +107,8 @@ object HardwareRadioProbe {
             )
         }
     }
+
+    private const val HARDWARE_RADIO_PERMISSION = "android.permission.ACCESS_BROADCAST_RADIO"
 
     private fun unavailable(
         availability: HardwareRadioAvailability,
