@@ -44,12 +44,17 @@ object BundledCatalog {
             language = "Deutsch / Français / Italiano",
             category = "Jazz",
             stationType = "Internet",
-            isHardware = false,                        isOnline = true,
             isVerified = false,
             verificationStatus = "stream_pending_external_verification",
             lastVerified = "2026-10-07",
             source = "official-stream",
-            logoUrl = null
+            logoUrl = null,
+            broadcastType = BroadcastType.INTERNET,
+            frequencyVerified = false,
+            streamVerified = false,
+            streamVerifiedAt = null,
+            hardwareAccessState = HardwareAccessState.UNKNOWN,
+            isOnline = true
         )
     )
 
