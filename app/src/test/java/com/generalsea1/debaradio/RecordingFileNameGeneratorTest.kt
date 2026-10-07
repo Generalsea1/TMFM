@@ -8,13 +8,19 @@ class RecordingFileNameGeneratorTest {
     @Test
     fun generatedNameIsSafeAndDeterministic() {
         val name = RecordingFileNameGenerator.generate("محطة/اختبار", 0L)
-        assertEquals("TMFM_محطة_اختبار_1970-01-01_00-00-00.m4a", name)
+        assertEquals("TMFM_محطة_اختبار_1970-01-01_00-00-00.mp3", name)
     }
 
     @Test
     fun generatedNameStartsWithTmfm() {
         val name = RecordingFileNameGenerator.generate("Station", 0L)
         assertTrue(name.startsWith("TMFM_"))
-        assertTrue(name.endsWith(".m4a"))
+        assertTrue(name.endsWith(".mp3"))
+    }
+
+    @Test
+    fun explicitAacExtensionIsPreserved() {
+        val name = RecordingFileNameGenerator.generate("Station", 0L, "aac")
+        assertTrue(name.endsWith(".aac"))
     }
 }
