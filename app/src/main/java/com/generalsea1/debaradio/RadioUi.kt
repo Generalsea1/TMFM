@@ -1,6 +1,5 @@
 package com.generalsea1.tmfm
 
-import android.os.Build
 import android.text.format.DateUtils
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
@@ -428,10 +427,9 @@ private fun HardwareCard() {
             Spacer(Modifier.height(8.dp))
             Text(
                 when (status.availability) {
-                    HardwareRadioAvailability.HARDWARE_AND_ACCESSIBLE -> "التونر معلن ومصرح"
-                    HardwareRadioAvailability.HARDWARE_PRESENT_ACCESS_DENIED -> "العتاد معلن لكن ACCESS_BROADCAST_RADIO محمي"
-                    HardwareRadioAvailability.NO_HARDWARE -> "الجهاز لا يعلن عن Broadcast Radio"
-                    HardwareRadioAvailability.UNKNOWN -> "الحالة غير معروفة"
+                    HardwareRadioAvailability.SYSTEM_ONLY -> "Broadcast Radio معلن لكن التحكم محمي"
+                    HardwareRadioAvailability.NO_TUNER -> "لا يوجد tuner مكشوف للتطبيق عبر Android"
+                    HardwareRadioAvailability.UNKNOWN -> "القدرة موجودة جزئيًا لكن جلسة tuner غير مثبتة"
                 },
                 fontWeight = FontWeight.Bold
             )
@@ -442,6 +440,7 @@ private fun HardwareCard() {
                 StatusPill("FM", status.fm)
                 StatusPill("AM", status.am)
                 StatusPill("ACCESS", status.accessGranted)
+                StatusPill("SYSTEM FEATURE", status.featurePresent)
             }
         }
     }
