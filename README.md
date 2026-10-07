@@ -17,7 +17,7 @@ Android radio application built in Kotlin + Jetpack Compose + Media3.
 
 ## Hardware FM/AM truth
 
-Android's Broadcast Radio stack only works when the device/OEM exposes a compatible tuner stack. The system APIs are protected/system-oriented on many consumer phones. DEBA Radio therefore probes actual system availability and never fakes frequency scanning, signal strength or reception.
+Android's Broadcast Radio stack only works when the device/OEM exposes a compatible tuner stack. The system APIs are protected/system-oriented on many consumer phones. TMFMRadio therefore probes actual system availability and never fakes frequency scanning, signal strength or reception.
 
 A successful application build does NOT prove FM reception on a physical phone. Real FM verification requires a compatible physical device that actually exposes an accessible tuner.
 
@@ -56,6 +56,6 @@ Versions are pinned; the build does not use dynamic dependency versions.
 
 ## CI deliverable
 
-.github/workflows/build.yml builds app-debug.apk and uploads it as the deba-radio-debug-apk GitHub Actions artifact while printing SHA-256.
+.github/workflows/build.yml builds app-debug.apk and uploads it as the TmFM-radio-debug-apk GitHub Actions artifact while printing SHA-256.
 
 The CI build verifies compilation and unit tests. It cannot perform real FM hardware verification on a physical phone.
