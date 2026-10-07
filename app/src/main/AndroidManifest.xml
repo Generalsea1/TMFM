@@ -16,6 +16,7 @@
         android:roundIcon="@drawable/ic_radio"
         android:supportsRtl="true"
         android:usesCleartextTraffic="true"
+        android:allowAudioPlaybackCapture="true"
         android:theme="@style/Theme.TMFMRadio">
 
         <activity
