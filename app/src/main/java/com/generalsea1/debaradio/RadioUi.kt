@@ -610,7 +610,7 @@ private fun StationRow(station: RadioStation, favorite: Boolean, onClick: () -> 
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (station.isVerified) "موثقة" else "مرجع ترددي / اكتشاف خارجي",
+                    if (station.isVerified) "موثقة" else if (station.verificationStatus.equals("frequency_reference", ignoreCase = true)) "تردد مرجعي — بلا بث موثق" else "غير متاح للمستخدم",
                     color = Brass,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -649,18 +649,18 @@ private fun StationDialog(
                 Spacer(Modifier.height(8.dp))
                 Text(
                     if (station.streamUrl.isNullOrBlank()) "تردد/دليل فقط؛ لا يوجد بث إنترنت موثق داخل TMFM."
-                    else "بث إنترنت متاح للتشغيل والتسجيل المحلي.",
+                    else "بث إنترنت موثق ومتاح للتشغيل.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         },
         confirmButton = {
             Row {
-                Button(onClick = onPlay, enabled = !station.streamUrl.isNullOrBlank()) { Text("▶ تشغيل") }
+                Button(onClick = onPlay, enabled = station.internetPlayable) { Text("▶ تشغيل") }
                 Spacer(Modifier.width(8.dp))
                 OutlinedButton(
                     onClick = onRecord,
-                    enabled = Build.VERSION.SDK_INT >= 29 && !station.streamUrl.isNullOrBlank()
+                    enabled = station.directStreamRecordable
                 ) { Text("● تسجيل") }
             }
         },
