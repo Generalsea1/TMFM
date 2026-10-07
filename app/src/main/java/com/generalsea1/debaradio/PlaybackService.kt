@@ -34,9 +34,11 @@ class PlaybackService : MediaSessionService() {
             )
         }
 
-        mediaSession = MediaSession.Builder(this, player)
-            .setSessionActivity(sessionActivity)
-            .build()
+        val sessionBuilder = MediaSession.Builder(this, player)
+        if (sessionActivity != null) {
+            sessionBuilder.setSessionActivity(sessionActivity)
+        }
+        mediaSession = sessionBuilder.build()
     }
 
     override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = mediaSession
