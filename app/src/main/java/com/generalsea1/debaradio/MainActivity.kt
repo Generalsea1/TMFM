@@ -126,6 +126,8 @@ class MainActivity : ComponentActivity() {
             return
         }
 
+        // Recording captures TMFM's own media playback, so ensure the station is playing first.
+        play(station)
         pendingRecordStation = station
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
             != PackageManager.PERMISSION_GRANTED
