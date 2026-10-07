@@ -88,6 +88,7 @@ fun TmfmRadioApp(
     onPlayRecording: (RecordingEntity) -> Unit,
     onShareRecording: (RecordingEntity) -> Unit,
     onSleepRequested: (Int) -> Unit,
+    onOpenSystemFm: () -> Unit,
     vm: MainViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
@@ -107,6 +108,7 @@ fun TmfmRadioApp(
             onPlayRecording = onPlayRecording,
             onShareRecording = onShareRecording,
             onSleepRequested = onSleepRequested,
+            onOpenSystemFm = onOpenSystemFm,
             theme = theme,
             onTheme = {
                 ThemePrefs.set(context, it)
@@ -127,6 +129,7 @@ private fun TmfmScaffold(
     onPlayRecording: (RecordingEntity) -> Unit,
     onShareRecording: (RecordingEntity) -> Unit,
     onSleepRequested: (Int) -> Unit,
+    onOpenSystemFm: () -> Unit,
     theme: ThemeChoice,
     onTheme: (ThemeChoice) -> Unit
 ) {
@@ -150,7 +153,10 @@ private fun TmfmScaffold(
     ) { padding ->
         Box(Modifier.fillMaxSize().padding(padding)) {
             when (tab) {
-                Tab.HOME -> HomeScreen(vm, controllerProvider, onStationPlayed, onRecordRequested, onSleepRequested)
+                Tab.HOME -> HomeScreen(
+                    vm, controllerProvider, onStationPlayed, onRecordRequested,
+                    onSleepRequested, onOpenSystemFm
+                )
                 Tab.STATIONS -> StationsScreen(vm, onStationPlayed, onRecordRequested, onSleepRequested)
                 Tab.RECORDINGS -> RecordingsScreen(vm, onPlayRecording, onShareRecording)
                 Tab.SETTINGS -> SettingsScreen(theme, onTheme, vm)
@@ -177,7 +183,8 @@ private fun HomeScreen(
     controllerProvider: () -> androidx.media3.session.MediaController?,
     onStationPlayed: (RadioStation) -> Unit,
     onRecordRequested: (RadioStation) -> Unit,
-    onSleepRequested: (Int) -> Unit
+    onSleepRequested: (Int) -> Unit,
+    onOpenSystemFm: () -> Unit
 ) {
     val stations by vm.stations.collectAsStateWithLifecycle()
     val favorites by vm.favorites.collectAsStateWithLifecycle()
@@ -191,7 +198,9 @@ private fun HomeScreen(
         }
     }
 
-    val current = stations.firstOrNull { favorites.contains(it.id) } ?: stations.firstOrNull()
+    val current = stations.firstOrNull { favorites.contains(it.id) && it.internetPlayable }
+        ?: stations.firstOrNull { it.internetPlayable }
+        ?: stations.firstOrNull()
     val currentFavorite = current?.id?.let { favorites.contains(it) } == true
 
     LazyColumn(
@@ -252,14 +261,22 @@ private fun HomeScreen(
                             action = current?.let { station -> { vm.toggleFavorite(station) } },
                             active = currentFavorite
                         )
-                        ControlButton(if (playing) "Ⅱ" else "▶",
-                            current?.let {
+                        ControlButton(
+                            if (playing) "Ⅱ" else "▶",
+                            current?.takeIf { it.internetPlayable }?.let {
                                 {
                                     vm.markPlayed(it)
                                     onStationPlayed(it)
                                 }
-                            }, true, true)
-                        ControlButton("●", current?.let { { onRecordRequested(it) } }, false)
+                            },
+                            true,
+                            true
+                        )
+                        ControlButton(
+                            "●",
+                            current?.takeIf { it.internetPlayable }?.let { { onRecordRequested(it) } },
+                            false
+                        )
                         ControlButton("◴", current?.let { { onSleepRequested(30) } }, false)
                     }
 
@@ -275,7 +292,7 @@ private fun HomeScreen(
             }
         }
 
-        item { HardwareCard() }
+        item { HardwareCard(onOpenSystemFm) }
 
         item {
             SectionHeader("مصر", "كتالوج ترددات موسّع")
@@ -409,9 +426,11 @@ private fun ControlButton(text: String, action: (() -> Unit)?, active: Boolean, 
 }
 
 @Composable
-private fun HardwareCard() {
+private fun HardwareCard(onOpenSystemFm: () -> Unit) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val status = remember(context) { HardwareRadioProbe.detect(context) }
+    val canOpenSystem = status.systemRadioPackage != null
+
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
@@ -419,29 +438,60 @@ private fun HardwareCard() {
     ) {
         Column(Modifier.padding(18.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Column {
+                Column(Modifier.weight(1f)) {
                     Text("الراديو الهوائي", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                    Text("تشخيص حقيقي • لا محاكاة", color = Brass)
+                    Text("FM حقيقي فقط • لا محاكاة", color = Brass)
                 }
                 Text("FM", color = Brass, fontWeight = FontWeight.Black)
             }
+
             Spacer(Modifier.height(8.dp))
             Text(
-                when (status.availability) {
-                    HardwareRadioAvailability.HARDWARE_AND_ACCESSIBLE -> "التونر معلن ومصرح"
-                    HardwareRadioAvailability.HARDWARE_PRESENT_ACCESS_DENIED -> "العتاد معلن لكن ACCESS_BROADCAST_RADIO محمي"
-                    HardwareRadioAvailability.NO_HARDWARE -> "الجهاز لا يعلن عن Broadcast Radio"
-                    HardwareRadioAvailability.UNKNOWN -> "الحالة غير معروفة"
+                when (status.accessState) {
+                    HardwareAccessState.AVAILABLE ->
+                        "الوصول مُعلن، لكن جلسة tuner لم تُثبت داخل TMFM."
+                    HardwareAccessState.SYSTEM_ONLY ->
+                        "يوجد/يُعلن عن FM، لكن التحكم محجوز للنظام أو OEM."
+                    HardwareAccessState.NO_TUNER ->
+                        "لا يوجد tuner مكشوف لـTMFM على هذا الجهاز."
+                    HardwareAccessState.UNKNOWN ->
+                        "حالة FM غير معروفة."
                 },
                 fontWeight = FontWeight.Bold
             )
+
             Spacer(Modifier.height(5.dp))
             Text(status.detail, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(Modifier.height(9.dp))
+
+            Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                StatusPill("FM", status.fm)
-                StatusPill("AM", status.am)
-                StatusPill("ACCESS", status.accessGranted)
+                StatusPill(
+                    "TUNER",
+                    status.featurePresent
+                )
+                StatusPill(
+                    "SESSION",
+                    status.tunerSessionVerified
+                )
+                StatusPill(
+                    "SYSTEM FM",
+                    canOpenSystem
+                )
+            }
+
+            if (canOpenSystem) {
+                Spacer(Modifier.height(10.dp))
+                OutlinedButton(
+                    onClick = onOpenSystemFm,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("فتح راديو FM الخاص بالنظام")
+                }
+                Text(
+                    "هذا يفتح تطبيق OEM إن وجده TMFM، ولا يدّعي أن التحكم داخل TMFM متاح.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
@@ -610,7 +660,7 @@ private fun StationRow(station: RadioStation, favorite: Boolean, onClick: () -> 
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    if (station.isVerified) "موثقة" else "مرجع ترددي / اكتشاف خارجي",
+                    classificationLabel(station),,
                     color = Brass,
                     style = MaterialTheme.typography.labelSmall
                 )
@@ -656,11 +706,11 @@ private fun StationDialog(
         },
         confirmButton = {
             Row {
-                Button(onClick = onPlay, enabled = !station.streamUrl.isNullOrBlank()) { Text("▶ تشغيل") }
+                Button(onClick = onPlay, enabled = station.internetPlayable) { Text("▶ تشغيل") }
                 Spacer(Modifier.width(8.dp))
                 OutlinedButton(
                     onClick = onRecord,
-                    enabled = Build.VERSION.SDK_INT >= 29 && !station.streamUrl.isNullOrBlank()
+                    enabled = station.internetPlayable
                 ) { Text("● تسجيل") }
             }
         },
@@ -826,11 +876,27 @@ private fun frequencyLabel(station: RadioStation): String =
     station.frequencyMhz?.let { String.format(Locale.US, "%.1f", it) } ?: station.name
 
 private fun stationState(station: RadioStation?): String =
-    when {
-        station == null -> "لا توجد محطة مختارة."
-        station.streamUrl.isNullOrBlank() -> "تردد مرجعي • لا يوجد بث إنترنت موثق"
-        station.isVerified -> "بث إنترنت موثق • التشغيل والتسجيل المحلي متاحان"
-        else -> "اكتشاف خارجي • غير موثق من TMFM"
+    when (station?.classification()) {
+        null -> "لا توجد محطة مختارة."
+        StationClassification.PLAYABLE_INTERNET ->
+            "بث إنترنت مثبت خارجيًا • التشغيل والتسجيل المباشر متاحان."
+        StationClassification.VERIFIED_FREQUENCY ->
+            "تردد FM موثّق • يحتاج وصول tuner حقيقي من النظام أو OEM."
+        StationClassification.DIRECTORY_REFERENCE ->
+            "تردد مرجعي • لا يوجد بث إنترنت موثّق."
+        StationClassification.OFFLINE ->
+            "البث غير متاح حاليًا."
+        StationClassification.UNVERIFIED ->
+            "غير متاح للمستخدم حتى يكتمل التحقق."
+    }
+
+private fun classificationLabel(station: RadioStation): String =
+    when (station.classification()) {
+        StationClassification.PLAYABLE_INTERNET -> "بث إنترنت متاح"
+        StationClassification.VERIFIED_FREQUENCY -> "تردد FM موثّق"
+        StationClassification.DIRECTORY_REFERENCE -> "مرجع ترددي"
+        StationClassification.OFFLINE -> "غير متاح حاليًا"
+        StationClassification.UNVERIFIED -> "غير متاح"
     }
 
 private fun formatDate(millis: Long): String =
