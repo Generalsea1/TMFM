@@ -79,13 +79,13 @@ jobs:
           set -euo pipefail
           mkdir -p docs/evidence
           : > docs/evidence/stream-verification.txt
-          names=( "Mix FM 87.8" "Radio Hits 88.2" "Nogoum FM 100.6" "Mega FM 92.7" "Sha3by FM 95.0" )
+          names=( "Nogoum FM 100.6" "Nile FM 104.2" "Nagham FM 105.3" "ON Sport FM 93.7" "Sha3by FM 95.0" )
           urls=(
-            "https://stream-29.zeno.fm/na3vpvn10qruv"
-            "https://radiohits882.radioca.st/;"
-            "https://stream.zeno.fm/qb1zvsykm98uv"
-            "https://megafm927.radioca.st/stream"
-            "https://radio95.radioca.st/;"
+            "https://audio.nrpstream.com/listen/nogoumfm/radio.mp3"
+            "https://audio.nrpstream.com/listen/nile_fm/radio.mp3"
+            "https://ahmsamir.radioca.st/stream"
+            "https://carina.streamerr.co:2020/stream/OnSportFM"
+            "https://radio95.radioca.st/stream/1/"
           )
           for i in "${!urls[@]}"; do
             name="${names[$i]}"

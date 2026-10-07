@@ -27,3 +27,16 @@ Base: production/tmfm-radio-complete
 ## M0 boundary
 
 Physical FM remains NOT VERIFIED. No tuner session or tune callback evidence exists in this environment.
+
+
+## H3 — exhausted
+- Attempt 1: Mix FM candidate rejected by HEAD=405 and the GET fallback timed out.
+- Attempt 2: the same Mix FM endpoint again timed out after GET fallback.
+- Do not retry the H3 endpoints.
+
+## H4 — alternate broadcaster/CDN route
+- Reason: current web catalogues list alternate current HTTPS routes for several Egyptian stations, including Nogoum FM, Nile FM, Nagham FM, ON Sport FM, and Sha3by FM.
+- Expected result: these alternate endpoints answer and provide decodable MP3 audio for 8 seconds with non-silent audio evidence in GitHub Actions.
+- Falsification: any candidate fails HTTPS response, ffprobe audio detection, or 8-second ffmpeg/volumedetect.
+- Attempt budget: maximum 2.
+- No candidate is marked PLAYABLE in the source catalog before this evidence exists.
