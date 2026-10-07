@@ -16,15 +16,26 @@ data class RadioStation(
     val logoUrl: String?,
     val language: String?,
     val category: String?,
-    val stationType: String?,
-    val isHardware: Boolean,
-    val isOnline: Boolean,
-    val isVerified: Boolean,
+    val broadcastType: BroadcastType = if (streamUrl != null) BroadcastType.INTERNET else BroadcastType.DIRECTORY_ONLY,
+    val frequencyVerified: Boolean = false,
+    val streamVerified: Boolean = false,
+    val streamVerifiedAt: String? = null,
+    val hardwareAccessState: HardwareAccessState = HardwareAccessState.UNKNOWN,
+    val isOnline: Boolean = true,
+    val isVerified: Boolean = false,
     val isIslamic: Boolean = false,
     val isChristian: Boolean = false,
     val verificationStatus: String = "unverified",
     val lastVerified: String? = null,
     val source: String? = null,
     val notes: String? = null,
-    val regionalAvailability: String? = null
-)
+    val regionalAvailability: String? = null,
+    val streamCodec: String? = null,
+    val streamBitrateKbps: Int? = null,
+    val streamConnectMs: Long? = null,
+    val streamVerificationReason: String? = null,
+    val streamConsecutiveFailures: Int = 0
+) {
+    val internetPlayable: Boolean
+        get() = isOnline && !streamUrl.isNullOrBlank() && streamVerified
+}
