@@ -18,6 +18,7 @@ class RadioStationTest {
             streamUrl = "https://example.com/live",
             streamType = "MP3",
             officialUrl = "https://example.com",
+            logoUrl = null,
             language = "العربية",
             category = "Music",
             isHardware = false,
@@ -29,6 +30,7 @@ class RadioStationTest {
 
         assertEquals("Test FM", station.name)
         assertEquals(90.9, station.frequencyMhz!!, 0.001)
+        assertEquals("https://example.com/live", station.streamUrl)
         assertTrue(station.isVerified)
     }
 }
