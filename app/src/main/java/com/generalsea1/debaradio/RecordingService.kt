@@ -18,6 +18,8 @@ import android.media.projection.MediaProjection
 import android.media.projection.MediaProjectionManager
 import android.os.Build
 import android.os.IBinder
+import android.os.Handler
+import android.os.Looper
 import android.os.Parcelable
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
@@ -127,6 +129,12 @@ class RecordingService : Service() {
         var totalPcmBytes = 0L
         var actualSampleRate = 44_100
         var actualChannels = 2
+        val projectionCallback = object : MediaProjection.Callback() {
+            override fun onStop() {
+                running.set(false)
+            }
+        }
+        projection.registerCallback(projectionCallback, Handler(Looper.getMainLooper()))
 
         try {
             val configured = createAudioRecord(projection)
@@ -266,6 +274,7 @@ class RecordingService : Service() {
             runCatching { codec?.release() }
             if (muxerStarted) runCatching { muxer?.stop() }
             runCatching { muxer?.release() }
+            runCatching { projection.unregisterCallback(projectionCallback) }
             runCatching { projection.stop() }
         }
     }
