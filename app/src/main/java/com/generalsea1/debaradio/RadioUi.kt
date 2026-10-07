@@ -708,12 +708,11 @@ private fun StationDialog(
         },
         confirmButton = {
             Row {
-                Button(onClick = onPlay, enabled = station.internetPlayable) { Text("▶ تشغيل") }
-                Spacer(Modifier.width(8.dp))
-                OutlinedButton(
-                    onClick = onRecord,
-                    enabled = station.internetPlayable
-                ) { Text("● تسجيل") }
+                if (station.internetPlayable) {
+                    Button(onClick = onPlay) { Text("▶ تشغيل") }
+                    Spacer(Modifier.width(8.dp))
+                    OutlinedButton(onClick = onRecord) { Text("● تسجيل") }
+                }
             }
         },
         dismissButton = {
