@@ -73,6 +73,37 @@ jobs:
           stat -c "APK_BYTES=%s" "$APK"
           "$AAPT" dump badging "$APK" | grep -F "package: name='com.generalsea1.tmfm'"
 
+      - name: Verify bundled Internet streams
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p docs/evidence
+          : > docs/evidence/stream-verification.txt
+          names=( "Mix FM 87.8" "Radio Hits 88.2" "Nogoum FM 100.6" "Mega FM 92.7" "Sha3by FM 95.0" )
+          urls=(
+            "https://stream-29.zeno.fm/na3vpvn10qruv"
+            "https://radiohits882.radioca.st/;"
+            "https://stream.zeno.fm/qb1zvsykm98uv"
+            "https://megafm927.radioca.st/stream"
+            "https://radio95.radioca.st/;"
+          )
+          for i in "${!urls[@]}"; do
+            name="${names[$i]}"
+            url="${urls[$i]}"
+            echo "=== $name ===" | tee -a docs/evidence/stream-verification.txt
+            echo "URL=$url" | tee -a docs/evidence/stream-verification.txt
+            curl --fail --location --silent --show-error --max-time 15 --head "$url" >/tmp/tmfm-head.txt || {
+              echo "HEAD=FAIL" | tee -a docs/evidence/stream-verification.txt
+              exit 1
+            }
+            echo "HEAD=PASS" | tee -a docs/evidence/stream-verification.txt
+            ffprobe -v error -rw_timeout 12000000 -show_entries stream=codec_name,codec_type,bit_rate -of default=noprint_wrappers=1 "$url" | tee -a docs/evidence/stream-verification.txt
+            timeout 20s ffmpeg -hide_banner -loglevel error -i "$url" -t 8 -af volumedetect -f null - 2>/tmp/tmfm-volumedetect.txt
+            cat /tmp/tmfm-volumedetect.txt | tee -a docs/evidence/stream-verification.txt
+            grep -E "mean_volume:|max_volume:" /tmp/tmfm-volumedetect.txt >/dev/null
+            echo "DECODE_8S=PASS" | tee -a docs/evidence/stream-verification.txt
+          done
+
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4
         with:
