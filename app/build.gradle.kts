@@ -39,18 +39,18 @@ android {
 }
 
 dependencies {
-    implementation("androidx.core:core-ktx:1.19.1")
-    implementation("androidx.activity:activity-compose:1.13.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.9.4")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0")
 
-    implementation("androidx.compose.ui:ui:1.12.1")
-    implementation("androidx.compose.ui:ui-tooling-preview:1.12.1")
+    implementation("androidx.compose.ui:ui:1.10.5")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.10.5")
     implementation("androidx.compose.material3:material3:1.4.0")
-    debugImplementation("androidx.compose.ui:ui-tooling:1.12.1")
+    debugImplementation("androidx.compose.ui:ui-tooling:1.10.5")
 
-    implementation("androidx.media3:media3-exoplayer:1.11.1")
-    implementation("androidx.media3:media3-exoplayer-hls:1.11.1")
-    implementation("androidx.media3:media3-session:1.11.1")
+    implementation("androidx.media3:media3-exoplayer:1.9.4")
+    implementation("androidx.media3:media3-exoplayer-hls:1.9.4")
+    implementation("androidx.media3:media3-session:1.9.4")
 }
