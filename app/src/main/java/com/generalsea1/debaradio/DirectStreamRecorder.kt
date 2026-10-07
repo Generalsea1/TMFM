@@ -86,12 +86,13 @@ class DirectStreamRecorder(private val context: android.content.Context) {
                         RecordingFileNameGenerator.generate(stationName, timestamp, extension)
                     )
 
-                    BufferedInputStream(connection.inputStream, 16 * 1024).use { input ->
+                    val currentConnection = requireNotNull(connection)
+                    BufferedInputStream(currentConnection.inputStream, 16 * 1024).use { input ->
                         FileOutputStream(temp, total > 0).use { output ->
                             total += copyAudio(
                                 input = input,
                                 output = output,
-                                metaInt = connection.getHeaderField("icy-metaint")?.toIntOrNull() ?: -1,
+                                metaInt = currentConnection.getHeaderField("icy-metaint")?.toIntOrNull() ?: -1,
                                 shouldContinue = shouldContinue
                             )
                             output.flush()
