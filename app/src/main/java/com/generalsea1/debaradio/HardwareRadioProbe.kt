@@ -4,60 +4,77 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.os.Build
 
-enum class HardwareRadioAvailability {
-    HARDWARE_PRESENT_ACCESS_DENIED,
-    HARDWARE_AND_ACCESSIBLE,
-    NO_HARDWARE,
-    UNKNOWN
-}
-
-data class HardwareRadioStatus(
-    val availability: HardwareRadioAvailability,
-    val featurePresent: Boolean,
-    val accessGranted: Boolean,
-    val fm: Boolean,
-    val am: Boolean,
-    val controlApiAvailable: Boolean,
-    val detail: String
-)
-
 object HardwareRadioProbe {
-    fun detect(context: Context): HardwareRadioStatus {
+    fun detect(context: Context): HardwareTunerStatus {
         val pm = context.packageManager
         val featurePresent = pm.hasSystemFeature("android.hardware.broadcastradio")
+        val systemRadio = SystemRadioLauncher.findSystemRadioApp(context)
 
         if (Build.VERSION.SDK_INT < 28) {
-            return HardwareRadioStatus(
-                HardwareRadioAvailability.NO_HARDWARE, featurePresent, false,
-                false, false, false,
-                "إصدار Android هذا لا يوفّر مسار Broadcast Radio المطلوب."
+            return HardwareTunerStatus(
+                accessState = HardwareAccessState.NO_TUNER,
+                featurePresent = featurePresent,
+                tunerSessionVerified = false,
+                systemRadioPackage = systemRadio?.packageName,
+                detail = "إصدار Android هذا لا يثبت وجود واجهة Broadcast Radio قابلة للاستخدام من TMFM."
             )
         }
-
-        val accessGranted =
-            context.checkSelfPermission("android.permission.ACCESS_BROADCAST_RADIO") ==
-                PackageManager.PERMISSION_GRANTED
 
         if (!featurePresent) {
-            return HardwareRadioStatus(
-                HardwareRadioAvailability.NO_HARDWARE, false, accessGranted,
-                false, false, false,
-                "لم يعلن النظام عن عتاد Broadcast Radio في هذا الجهاز."
+            return HardwareTunerStatus(
+                accessState = HardwareAccessState.NO_TUNER,
+                featurePresent = false,
+                tunerSessionVerified = false,
+                systemRadioPackage = systemRadio?.packageName,
+                detail = if (systemRadio == null) {
+                    "لم يعلن النظام عن Broadcast Radio، ولم يُعثر على تطبيق FM نظامي."
+                } else {
+                    "لم يعلن النظام عن Broadcast Radio، لكن يوجد تطبيق FM نظامي: " +
+                        systemRadio.label + "."
+                }
             )
         }
 
-        if (!accessGranted) {
-            return HardwareRadioStatus(
-                HardwareRadioAvailability.HARDWARE_PRESENT_ACCESS_DENIED, true, false,
-                true, false, false,
-                "الجهاز يعلن عن Broadcast Radio، لكن Android لا يمنح TMFM صلاحية التحكم في الـtuner؛ هذه صلاحية System/Privileged وليست صلاحية مستخدم عادية."
+        val accessGranted = runCatching {
+            context.checkSelfPermission("android.permission.ACCESS_BROADCAST_RADIO") ==
+                PackageManager.PERMISSION_GRANTED
+        }.getOrDefault(false)
+
+        return if (accessGranted) {
+            HardwareTunerStatus(
+                accessState = HardwareAccessState.AVAILABLE,
+                featurePresent = true,
+                tunerSessionVerified = false,
+                systemRadioPackage = systemRadio?.packageName,
+                detail = "الوصول مُعلن، لكن جلسة tuner مع callback حقيقي لم تثبت بعد؛ لا يُعلن TMFM عن FM قابل للتحكم."
+            )
+        } else {
+            HardwareTunerStatus(
+                accessState = HardwareAccessState.SYSTEM_ONLY,
+                featurePresent = true,
+                tunerSessionVerified = false,
+                systemRadioPackage = systemRadio?.packageName,
+                detail = if (systemRadio == null) {
+                    "الجهاز يعلن عن Broadcast Radio، لكن التحكم في الـtuner غير متاح لتطبيق TMFM العادي."
+                } else {
+                    "الجهاز يعلن عن Broadcast Radio، لكن التحكم في الـtuner غير متاح لـTMFM العادي. يمكن تجربة تطبيق FM النظامي: " +
+                        systemRadio.label + "."
+                }
             )
         }
-
-        return HardwareRadioStatus(
-            HardwareRadioAvailability.HARDWARE_AND_ACCESSIBLE, true, true,
-            true, false, false,
-            "الطبقة موجودة ومصرح بها، لكن التحكم الكامل يحتاج تكامل OEM/System API مصرحًا به. لا يتم تشغيل ماسح وهمي."
-        )
     }
+
+    fun engine(context: Context): HardwareRadioEngine =
+        UnavailableEngine(
+            when (detect(context).accessState) {
+                HardwareAccessState.NO_TUNER ->
+                    "الراديو الهوائي غير متاح على هذا الجهاز."
+                HardwareAccessState.SYSTEM_ONLY ->
+                    "FM موجود أو معلن من النظام، لكن التحكم الداخلي محجوز لمكوّن النظام/OEM."
+                HardwareAccessState.AVAILABLE ->
+                    "الوصول مُعلن، لكن جلسة tuner فعلية لم تُثبت بعد."
+                HardwareAccessState.UNKNOWN ->
+                    "حالة FM غير معروفة."
+            }
+        )
 }
