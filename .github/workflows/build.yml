@@ -92,11 +92,15 @@ jobs:
             url="${urls[$i]}"
             echo "=== $name ===" | tee -a docs/evidence/stream-verification.txt
             echo "URL=$url" | tee -a docs/evidence/stream-verification.txt
-            curl --fail --location --silent --show-error --max-time 15 --head "$url" >/tmp/tmfm-head.txt || {
-              echo "HEAD=FAIL" | tee -a docs/evidence/stream-verification.txt
-              exit 1
-            }
-            echo "HEAD=PASS" | tee -a docs/evidence/stream-verification.txt
+            if curl --fail --location --silent --show-error --max-time 15 --head "$url" >/tmp/tmfm-head.txt; then
+              echo "HEAD=PASS" | tee -a docs/evidence/stream-verification.txt
+            else
+              echo "HEAD=NOT_SUPPORTED; FALLING_BACK_TO_GET" | tee -a docs/evidence/stream-verification.txt
+              curl --fail --location --silent --show-error --max-time 15 --range 0-65535 -D /tmp/tmfm-get-headers.txt -o /tmp/tmfm-first-bytes.bin "$url"
+              test -s /tmp/tmfm-first-bytes.bin
+              echo "GET_INITIAL_BYTES=PASS" | tee -a docs/evidence/stream-verification.txt
+              sed -n '1,12p' /tmp/tmfm-get-headers.txt | tee -a docs/evidence/stream-verification.txt
+            fi
             ffprobe -v error -rw_timeout 12000000 -show_entries stream=codec_name,codec_type,bit_rate -of default=noprint_wrappers=1 "$url" | tee -a docs/evidence/stream-verification.txt
             timeout 20s ffmpeg -hide_banner -loglevel error -i "$url" -t 8 -af volumedetect -f null - 2>/tmp/tmfm-volumedetect.txt
             cat /tmp/tmfm-volumedetect.txt | tee -a docs/evidence/stream-verification.txt
