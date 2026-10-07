@@ -10,7 +10,7 @@ object RecordingFileNameGenerator {
     fun generate(stationName: String, timestampMillis: Long = System.currentTimeMillis()): String {
         val safeStation = stationName
             .trim()
-            .replace(Regex("[\\/:*?"<>|]"), "_")
+            .replace(Regex("""[\\/:*?"<>|]"""), "_")
             .replace(Regex("\\s+"), " ")
             .ifBlank { "Unknown Station" }
 
