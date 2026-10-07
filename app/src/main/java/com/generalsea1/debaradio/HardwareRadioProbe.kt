@@ -24,7 +24,7 @@ data class HardwareRadioStatus(
 object HardwareRadioProbe {
     fun detect(context: Context): HardwareRadioStatus {
         val pm = context.packageManager
-        val featurePresent = pm.hasSystemFeature(PackageManager.FEATURE_BROADCAST_RADIO)
+        val featurePresent = pm.hasSystemFeature("android.hardware.broadcastradio")
 
         if (Build.VERSION.SDK_INT < 28) {
             return HardwareRadioStatus(
