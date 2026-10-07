@@ -56,7 +56,7 @@ class RecordingService : Service() {
                 val stationName = intent.getStringExtra(EXTRA_STATION_NAME) ?: "Unknown Station"
                 val stationId = intent.getStringExtra(EXTRA_STATION_ID) ?: "unknown"
                 val resultCode = intent.getIntExtra(EXTRA_RESULT_CODE, 0)
-                val resultData = intent.parcelableExtraCompat(EXTRA_RESULT_DATA)
+                val resultData = intent.parcelableExtraCompat<Intent>(EXTRA_RESULT_DATA)
 
                 if (resultCode != RESULT_OK || resultData == null) {
                     stopSelf()
@@ -100,7 +100,7 @@ class RecordingService : Service() {
     }
 
     @RequiresApi(29)
-    private fun recordPlayback(
+    private suspend fun recordPlayback(
         stationId: String,
         stationName: String,
         resultCode: Int,
