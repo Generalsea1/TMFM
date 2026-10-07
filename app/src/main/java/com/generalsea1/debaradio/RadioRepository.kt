@@ -29,7 +29,7 @@ class RadioRepository(
             mergeStations(
                 mergeStations(bundled, verified),
                 remote
-            ).also {
+            ).filter(RadioStation::isUserVisible).also {
                 if (it.isEmpty()) error("تعذر تحميل دليل المحطات حاليًا.")
             }
         }
@@ -50,6 +50,7 @@ class RadioRepository(
             mergeStations(bundled, verified),
             remote
         ).filter { station ->
+            station.isUserVisible &&
             val haystack = listOfNotNull(
                 station.name,
                 station.nameArabic,
