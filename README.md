@@ -33,7 +33,7 @@ Project: sjutgrwdfozrlyiaebai
 
 Table: public.radio_stations
 
-RLS is enabled. Anonymous clients can only SELECT records that are both verified and online. No write access is granted to anonymous clients.
+RLS is enabled. Anonymous clients can only SELECT records that are both verified and online. Anonymous clients have SELECT access only; INSERT, UPDATE and DELETE are revoked.
 
 Client code uses the publishable Supabase key only.
 
@@ -41,12 +41,16 @@ Client code uses the publishable Supabase key only.
 
 - Android Gradle Plugin 9.4.0
 - Gradle 9.6.0
-- Kotlin 2.3.21
-- Compose UI 1.12.1
+- Kotlin/Compose compiler plugin 2.4.10
+- Compose UI 1.10.5
 - Material 3 1.4.0
-- Media3 1.11.0
+- Media3 1.9.4
+- AndroidX Core 1.17.0
+- Activity Compose 1.12.4
+- Lifecycle 2.9.4
 - minSdk 26
-- targetSdk 37
+- compileSdk 36
+- targetSdk 36
 
 Versions are pinned; the build does not use dynamic dependency versions.
 
