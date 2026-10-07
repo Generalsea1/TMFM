@@ -11,6 +11,7 @@ data class RadioStation(
     val streamUrl: String?,
     val streamType: String?,
     val officialUrl: String?,
+    val logoUrl: String?,
     val language: String?,
     val category: String?,
     val isHardware: Boolean,
