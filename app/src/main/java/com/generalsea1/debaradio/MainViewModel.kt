@@ -21,7 +21,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var job: Job? = null
 
     private val _stations = MutableStateFlow(
-        BundledCatalog.egypt + BundledCatalog.globalBaseline
+        displayableCatalog(BundledCatalog.egypt + BundledCatalog.globalBaseline)
     )
     val stations: StateFlow<List<RadioStation>> = _stations.asStateFlow()
 
@@ -63,14 +63,14 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _loading.value = true
             _error.value = null
             runCatching { repository.fetchCountryStations(normalized) }
-                .onSuccess { _stations.value = it }
+                .onSuccess { _stations.value = displayableCatalog(it) }
                 .onFailure {
                     val fallback = if (normalized == "EG") {
                         BundledCatalog.egypt
                     } else {
                         BundledCatalog.globalBaseline.filter { it.countryCode == normalized }
                     }
-                    _stations.value = fallback
+                    _stations.value = displayableCatalog(fallback)
                     _error.value = if (fallback.isEmpty()) {
                         "لا توجد بيانات محلية لهذه الدولة حاليًا."
                     } else {
@@ -103,7 +103,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             _loading.value = true
             _error.value = null
             runCatching { repository.searchStations(normalized) }
-                .onSuccess { _stations.value = it }
+                .onSuccess { _stations.value = displayableCatalog(it) }
                 .onFailure {
                     _stations.value = _stations.value.filter { station ->
                         val text = listOfNotNull(
@@ -165,4 +165,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun clearError() {
         _error.value = null
     }
+
+    private fun displayableCatalog(input: List<RadioStation>): List<RadioStation> =
+        input.filter {
+            RadioCatalogPolicy.allow(it) &&
+                it.classification() != StationClassification.UNVERIFIED
+        }
 }
