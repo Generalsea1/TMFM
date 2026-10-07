@@ -21,7 +21,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private var job: Job? = null
 
     private val _stations = MutableStateFlow(
-        BundledCatalog.egypt + BundledCatalog.globalBaseline
+        RadioCatalogPolicy.filter(BundledCatalog.egypt + BundledCatalog.globalBaseline)
     )
     val stations: StateFlow<List<RadioStation>> = _stations.asStateFlow()
 
@@ -66,9 +66,9 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { _stations.value = it }
                 .onFailure {
                     val fallback = if (normalized == "EG") {
-                        BundledCatalog.egypt
+                        RadioCatalogPolicy.filter(BundledCatalog.egypt)
                     } else {
-                        BundledCatalog.globalBaseline.filter { it.countryCode == normalized }
+                        RadioCatalogPolicy.filter(BundledCatalog.globalBaseline.filter { it.countryCode == normalized })
                     }
                     _stations.value = fallback
                     _error.value = if (fallback.isEmpty()) {
