@@ -662,7 +662,7 @@ private fun StationRow(station: RadioStation, favorite: Boolean, onClick: () -> 
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    classificationLabel(station),,
+                    classificationLabel(station),
                     color = Brass,
                     style = MaterialTheme.typography.labelSmall
                 )

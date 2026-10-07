@@ -82,7 +82,7 @@ class RecordingService : Service() {
         }
     }
 
-    private fun saveRecording(
+    private suspend fun saveRecording(
         stationId: String,
         stationName: String,
         frequencyMhz: Double?,
