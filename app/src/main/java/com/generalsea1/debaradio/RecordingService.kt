@@ -30,12 +30,12 @@ class RecordingService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_STOP -> running.set(false)
-            ACTION_START -> startRecording(intent)
+            ACTION_START -> startRecording(intent, startId)
         }
         return START_NOT_STICKY
     }
 
-    private fun startRecording(intent: Intent) {
+    private fun startRecording(intent: Intent, startId: Int) {
         val stationName = intent.getStringExtra(EXTRA_STATION_NAME).orEmpty().ifBlank { "Station" }
         val stationId = intent.getStringExtra(EXTRA_STATION_ID).orEmpty().ifBlank { "unknown" }
         val streamUrl = intent.getStringExtra(EXTRA_STREAM_URL).orEmpty()

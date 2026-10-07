@@ -50,7 +50,6 @@ class RadioRepository(
             mergeStations(bundled, verified),
             remote
         ).filter { station ->
-            station.isUserVisible &&
             val haystack = listOfNotNull(
                 station.name,
                 station.nameArabic,
@@ -61,7 +60,8 @@ class RadioRepository(
                 station.language,
                 station.category
             ).joinToString(" ")
-            RadioCatalogPolicy.allow(station) &&
+            station.isUserVisible &&
+                RadioCatalogPolicy.allow(station) &&
                 haystack.contains(normalized, ignoreCase = true)
         }
     }

@@ -3,19 +3,27 @@
 Date: 2026-10-07
 Base: production/tmfm-radio-complete
 
-## Hypothesis H1 — buildable Internet Radio baseline
+## H1 — rejected after two build attempts
 
-- Reason: the current project is already Kotlin + Jetpack Compose + Media3 and contains a working playback service path.
-- Expected result: after removing forbidden runtime mechanisms and correcting compile/runtime contracts, the debug APK should assemble, unit tests should execute, and lint should remain strict.
-- Falsification: any Gradle compilation error, unit-test failure, lint failure, or APK identity failure in CI.
-- Attempt budget: maximum 2.
+- Scope: hardware-safe probe, direct MP3/AAC recording, truthful catalog visibility.
+- Attempt 1 failed because RadioUi still referenced removed hardware enum values.
+- Attempt 2 failed because RadioRepository contained an invalid filter expression and RecordingService used startId outside the onStartCommand scope.
+- Evidence: GitHub Actions Run #76 and Run #87 build logs.
+- H1 budget is exhausted. No more H1 builds are allowed.
 
-## H1 changes in scope
+## H2 — targeted compile correction
 
-1. Hardware FM remains honest and unverified unless a real tuner session is proven.
-2. Remove reflection from Hardware FM probing.
-3. Remove MediaProjection from Internet Radio recording; use a separate direct stream connection for supported MP3/AAC progressive streams.
-4. Hide Radio Browser discovery records from the normal playable catalog until M2 verification exists.
-5. Keep HLS recording disabled until segment assembly is implemented and verified.
+- Reason: both reported failures are deterministic source-level errors with exact file/line evidence; no architectural uncertainty remains for these two compiler errors.
+- Expected result: the corrected commit should pass the Gradle compile stage, then proceed to the existing unit-test, lint, APK identity, and artifact gates.
+- Falsification: any compile error in the corrected files or any later gate failure.
+- Attempt budget: maximum 2; this commit is the first H2 correction/build attempt.
 
-No claim of physical FM support is made by this change.
+## H2 changes
+
+1. Move station visibility predicate into a valid expression after haystack construction.
+2. Pass Android Service startId into startRecording so stopSelf(startId) is scoped correctly.
+3. No new feature, dependency, permission, reflection, MediaProjection, or hardware claim is introduced.
+
+## M0 boundary
+
+Physical FM remains NOT VERIFIED. No tuner session or tune callback evidence exists in this environment.
