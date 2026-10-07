@@ -5,7 +5,11 @@ import java.util.Date
 import java.util.Locale
 
 object RecordingFileNameGenerator {
-    fun generate(stationName: String, timestampMillis: Long): String {
+    fun generate(
+        stationName: String,
+        timestampMillis: Long,
+        extension: String = "mp3"
+    ): String {
         val date = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US).format(Date(timestampMillis))
         val safeName = stationName
             .replace(Regex("""[\\/:*?"<>|]"""), "_")
@@ -13,6 +17,10 @@ object RecordingFileNameGenerator {
             .trim()
             .ifBlank { "Station" }
             .take(80)
-        return "TMFM_" + safeName + "_" + date + ".m4a"
+        val safeExtension = extension
+            .lowercase(Locale.US)
+            .replace(Regex("[^a-z0-9]"), "")
+            .ifBlank { "mp3" }
+        return "TMFM_" + safeName + "_" + date + "." + safeExtension
     }
 }
