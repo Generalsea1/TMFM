@@ -1,0 +1,40 @@
+name: TMFM M2 Stream Verification
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify-streams:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Check required tools
+        shell: bash
+        run: |
+          set -euo pipefail
+          command -v python3
+          command -v ffmpeg
+          command -v ffprobe
+      - name: Verify streams against Supabase
+        env:
+          SUPABASE_URL: \${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: \${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          python3 tools/verify_streams.py
+      - name: Publish M2 evidence artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tmfm-m2-evidence
+          path: |
+            docs/evidence/m2-latest.json
+            docs/evidence/m2-runs/*.json
+          if-no-files-found: error
+          retention-days: 30
