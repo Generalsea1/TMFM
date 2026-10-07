@@ -261,22 +261,24 @@ private fun HomeScreen(
                             action = current?.let { station -> { vm.toggleFavorite(station) } },
                             active = currentFavorite
                         )
-                        ControlButton(
-                            if (playing) "Ⅱ" else "▶",
-                            current?.takeIf { it.internetPlayable }?.let {
+                        if (current?.internetPlayable == true) {
+                            ControlButton(
+                                if (playing) "Ⅱ" else "▶",
                                 {
-                                    vm.markPlayed(it)
-                                    onStationPlayed(it)
-                                }
-                            },
-                            true,
-                            true
-                        )
-                        ControlButton(
-                            "●",
-                            current?.takeIf { it.internetPlayable }?.let { { onRecordRequested(it) } },
-                            false
-                        )
+                                    vm.markPlayed(current)
+                                    onStationPlayed(current)
+                                },
+                                true,
+                                true
+                            )
+                        }
+                        if (current?.internetPlayable == true) {
+                            ControlButton(
+                                "●",
+                                { onRecordRequested(current) },
+                                false
+                            )
+                        }
                         ControlButton("◴", current?.let { { onSleepRequested(30) } }, false)
                     }
 
@@ -768,7 +770,7 @@ private fun RecordingsScreen(vm: MainViewModel, onPlay: (RecordingEntity) -> Uni
     Column(Modifier.fillMaxSize().padding(horizontal = 18.dp)) {
         Spacer(Modifier.height(18.dp))
         Text("تسجيلاتي", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-        Text("M4A محلي • لا يتم رفع التسجيل إلى خادم", color = Brass)
+        Text("تسجيل المصدر الأصلي • لا يتم رفع التسجيل إلى خادم", color = Brass)
         Spacer(Modifier.height(14.dp))
 
         if (recordings.isEmpty()) {
