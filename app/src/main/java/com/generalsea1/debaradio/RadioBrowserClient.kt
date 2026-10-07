@@ -1,6 +1,9 @@
 package com.generalsea1.debaradio
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.net.HttpURLConnection
@@ -27,17 +30,33 @@ class RadioBrowserClient {
         query: String,
         countryCode: String? = null,
         limit: Int = 100
-    ): List<RadioStation> = withContext(Dispatchers.IO) {
-        val params = buildList {
-            add("name=" + encode(query))
-            countryCode?.takeIf { it.isNotBlank() }?.let { add("countrycode=" + encode(it)) }
-            add("hidebroken=true")
-            add("limit=" + limit)
-            add("order=votes")
-            add("reverse=true")
-        }.joinToString("&")
+    ): List<RadioStation> = coroutineScope {
+        val normalized = query.trim()
+        if (normalized.isBlank()) return@coroutineScope emptyList()
 
-        fetchJsonFromMirrors("/json/stations/search", params).let(::parseStations)
+        val queries = listOf("name", "language", "tag", "country").map { field ->
+            async(Dispatchers.IO) {
+                val params = buildList {
+                    add(field + "=" + encode(normalized))
+                    countryCode?.takeIf { it.isNotBlank() }?.let {
+                        add("countrycode=" + encode(it))
+                    }
+                    add("hidebroken=true")
+                    add("limit=" + limit)
+                    add("order=votes")
+                    add("reverse=true")
+                }.joinToString("&")
+
+                runCatching {
+                    fetchJsonFromMirrors("/json/stations/search", params).let(::parseStations)
+                }.getOrElse { emptyList() }
+            }
+        }
+
+        queries.awaitAll()
+            .flatten()
+            .distinctBy { it.id }
+            .take(limit)
     }
 
     suspend fun countClick(stationUuid: String) = withContext(Dispatchers.IO) {
@@ -73,9 +92,7 @@ class RadioBrowserClient {
             requestText("https://all.api.radio-browser.info/json/servers", "GET")
                 .let(::parseServers)
                 .map { "https://" + it }
-        }.getOrElse {
-            emptyList()
-        }
+        }.getOrElse { emptyList() }
 
         val fallback = listOf(
             "https://de1.api.radio-browser.info",
