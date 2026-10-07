@@ -192,6 +192,7 @@ private fun HomeScreen(
     }
 
     val current = stations.firstOrNull { favorites.contains(it.id) } ?: stations.firstOrNull()
+    val currentFavorite = current?.id?.let { favorites.contains(it) } == true
 
     LazyColumn(
         Modifier.fillMaxSize().padding(horizontal = 18.dp),
@@ -246,8 +247,11 @@ private fun HomeScreen(
 
                     Spacer(Modifier.height(12.dp))
                     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                        ControlButton(if (current?.let(favorites::contains) == true) "♥" else "♡",
-                            current?.let { { vm.toggleFavorite(it) } }, current?.let(favorites::contains) == true)
+                        ControlButton(
+                            text = if (currentFavorite) "♥" else "♡",
+                            action = current?.let { station -> { vm.toggleFavorite(station) } },
+                            active = currentFavorite
+                        )
                         ControlButton(if (playing) "Ⅱ" else "▶",
                             current?.let {
                                 {
@@ -337,59 +341,61 @@ private fun VintageDial(frequency: Double?, modifier: Modifier) {
             val cy = size.height * 0.62f
             val radius = minOf(size.width * 0.40f, size.height * 0.70f)
             drawCircle(Walnut3, radius, androidx.compose.ui.geometry.Offset(cx, cy))
-            drawCircle(Brass, radius, androidx.compose.ui.geometry.Offset(cx, cy), style = Stroke(width = 3.dp.toPx()))
+            drawCircle(
+                Brass,
+                radius,
+                androidx.compose.ui.geometry.Offset(cx, cy),
+                style = Stroke(width = 3.dp.toPx())
+            )
 
             for (i in 0..20) {
-                val f = i / 20f
-                val a = Math.PI * (1.15 + 0.70 * f)
+                val fraction = i / 20f
+                val angle = Math.PI * (1.15 + 0.70 * fraction)
                 val inner = radius * 0.78f
                 val outer = radius * if (i % 5 == 0) 0.94f else 0.88f
                 drawLine(
                     BrassLight,
                     androidx.compose.ui.geometry.Offset(
-                        cx + (inner * kotlin.math.cos(a)).toFloat(),
-                        cy + (inner * kotlin.math.sin(a)).toFloat()
+                        cx + (inner * kotlin.math.cos(angle)).toFloat(),
+                        cy + (inner * kotlin.math.sin(angle)).toFloat()
                     ),
                     androidx.compose.ui.geometry.Offset(
-                        cx + (outer * kotlin.math.cos(a)).toFloat(),
-                        cy + (outer * kotlin.math.sin(a)).toFloat()
+                        cx + (outer * kotlin.math.cos(angle)).toFloat(),
+                        cy + (outer * kotlin.math.sin(angle)).toFloat()
                     ),
                     strokeWidth = if (i % 5 == 0) 3.dp.toPx() else 1.dp.toPx()
                 )
             }
 
             val value = frequency?.coerceIn(87.8, 108.0) ?: 98.0
-            val f = ((value - 87.8) / (108.0 - 87.8)).coerceIn(0.0, 1.0)
-            val a = Math.PI * (1.15 + 0.70 * f)
+            val fraction = ((value - 87.8) / (108.0 - 87.8)).coerceIn(0.0, 1.0)
+            val angle = Math.PI * (1.15 + 0.70 * fraction)
             drawLine(
                 BrassLight,
                 androidx.compose.ui.geometry.Offset(cx, cy),
                 androidx.compose.ui.geometry.Offset(
-                    cx + (radius * 0.74f * kotlin.math.cos(a)).toFloat(),
-                    cy + (radius * 0.74f * kotlin.math.sin(a)).toFloat()
+                    cx + (radius * 0.74f * kotlin.math.cos(angle)).toFloat(),
+                    cy + (radius * 0.74f * kotlin.math.sin(angle)).toFloat()
                 ),
                 strokeWidth = 4.dp.toPx()
             )
             drawCircle(BrassLight, 7.dp.toPx(), androidx.compose.ui.geometry.Offset(cx, cy))
+        }
 
-            val paint = android.graphics.Paint().apply {
-                color = android.graphics.Color.rgb(225, 201, 149)
-                textAlign = android.graphics.Paint.Align.CENTER
-                textSize = 28.dp.toPx()
-                typeface = android.graphics.Typeface.DEFAULT_BOLD
-            }
-            drawContext.canvas.nativeCanvas.drawText(
+        Column(
+            Modifier.fillMaxWidth().padding(top = 26.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
                 frequency?.let { String.format(Locale.US, "%.1f", it) } ?: "FM",
-                cx,
-                size.height * 0.27f,
-                paint
+                color = BrassLight,
+                style = MaterialTheme.typography.displaySmall,
+                fontWeight = FontWeight.Black
             )
-            paint.textSize = 11.dp.toPx()
-            drawContext.canvas.nativeCanvas.drawText("MHz", cx, size.height * 0.38f, paint)
+            Text("MHz", color = Brass, style = MaterialTheme.typography.labelSmall)
         }
     }
 }
-
 @Composable
 private fun ControlButton(text: String, action: (() -> Unit)?, active: Boolean, large: Boolean = false) {
     IconButton(
