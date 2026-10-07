@@ -40,3 +40,11 @@ Physical FM remains NOT VERIFIED. No tuner session or tune callback evidence exi
 - Falsification: any candidate fails HTTPS response, ffprobe audio detection, or 8-second ffmpeg/volumedetect.
 - Attempt budget: maximum 2.
 - No candidate is marked PLAYABLE in the source catalog before this evidence exists.
+
+## H4 — attempt 1 exhausted
+- Nogoum NRPstream endpoint returned HTTP 403 from GitHub Actions.
+
+## H4 — attempt 2 / final endpoint set
+- Current alternate direct HTTPS routes are tested for Radio 9090, Radio Hits, Mega FM, Nagham FM, ON Sport FM and Sha3by FM.
+- The verifier checks every candidate and records every error rather than stopping at the first failure.
+- H4 is exhausted after this attempt; no third H4 attempt will be made.

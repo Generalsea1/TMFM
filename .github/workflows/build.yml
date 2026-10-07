@@ -76,13 +76,15 @@ jobs:
       - name: Verify bundled Internet streams
         shell: bash
         run: |
-          set -euo pipefail
+          set -u
           mkdir -p docs/evidence
           : > docs/evidence/stream-verification.txt
-          names=( "Nogoum FM 100.6" "Nile FM 104.2" "Nagham FM 105.3" "ON Sport FM 93.7" "Sha3by FM 95.0" )
+          failed=0
+          names=( "Radio 9090 90.9" "Radio Hits 88.2" "Mega FM 92.7" "Nagham FM 105.3" "ON Sport FM 93.7" "Sha3by FM 95.0" )
           urls=(
-            "https://audio.nrpstream.com/listen/nogoumfm/radio.mp3"
-            "https://audio.nrpstream.com/listen/nile_fm/radio.mp3"
+            "https://9090streaming.mobtada.com/9090FMEGYPT"
+            "https://radiohits882.radioca.st/;"
+            "https://megafm927.radioca.st/stream"
             "https://ahmsamir.radioca.st/stream"
             "https://carina.streamerr.co:2020/stream/OnSportFM"
             "https://radio95.radioca.st/stream/1/"
@@ -92,22 +94,48 @@ jobs:
             url="${urls[$i]}"
             echo "=== $name ===" | tee -a docs/evidence/stream-verification.txt
             echo "URL=$url" | tee -a docs/evidence/stream-verification.txt
-            if curl --fail --location --silent --show-error --max-time 15 --head "$url" >/tmp/tmfm-head.txt; then
+            if curl --fail --location --silent --show-error --max-time 12 --head "$url" >/tmp/tmfm-head.txt; then
               echo "HEAD=PASS" | tee -a docs/evidence/stream-verification.txt
             else
-              echo "HEAD=NOT_SUPPORTED; FALLING_BACK_TO_GET" | tee -a docs/evidence/stream-verification.txt
-              curl --fail --location --silent --show-error --max-time 15 --range 0-65535 -D /tmp/tmfm-get-headers.txt -o /tmp/tmfm-first-bytes.bin "$url"
-              test -s /tmp/tmfm-first-bytes.bin
-              echo "GET_INITIAL_BYTES=PASS" | tee -a docs/evidence/stream-verification.txt
-              sed -n '1,12p' /tmp/tmfm-get-headers.txt | tee -a docs/evidence/stream-verification.txt
+              echo "HEAD=NOT_SUPPORTED_OR_FAILED; FALLBACK_GET" | tee -a docs/evidence/stream-verification.txt
+              if curl --fail --location --silent --show-error --max-time 12 --range 0-65535 -D /tmp/tmfm-get-headers.txt -o /tmp/tmfm-first-bytes.bin "$url"; then
+                if test -s /tmp/tmfm-first-bytes.bin; then
+                  echo "GET_INITIAL_BYTES=PASS" | tee -a docs/evidence/stream-verification.txt
+                  sed -n "1,12p" /tmp/tmfm-get-headers.txt | tee -a docs/evidence/stream-verification.txt
+                else
+                  echo "GET_INITIAL_BYTES=FAIL_EMPTY" | tee -a docs/evidence/stream-verification.txt
+                  failed=1; continue
+                fi
+              else
+                echo "GET_INITIAL_BYTES=FAIL" | tee -a docs/evidence/stream-verification.txt
+                failed=1; continue
+              fi
             fi
-            ffprobe -v error -rw_timeout 12000000 -show_entries stream=codec_name,codec_type,bit_rate -of default=noprint_wrappers=1 "$url" | tee -a docs/evidence/stream-verification.txt
-            timeout 20s ffmpeg -hide_banner -loglevel error -i "$url" -t 8 -af volumedetect -f null - 2>/tmp/tmfm-volumedetect.txt
-            cat /tmp/tmfm-volumedetect.txt | tee -a docs/evidence/stream-verification.txt
-            grep -E "mean_volume:|max_volume:" /tmp/tmfm-volumedetect.txt >/dev/null
-            echo "DECODE_8S=PASS" | tee -a docs/evidence/stream-verification.txt
+            if ffprobe -v error -rw_timeout 12000000 -show_entries stream=codec_name,codec_type,bit_rate -of default=noprint_wrappers=1 "$url" | tee -a docs/evidence/stream-verification.txt; then
+              echo "FFPROBE=PASS" | tee -a docs/evidence/stream-verification.txt
+            else
+              echo "FFPROBE=FAIL" | tee -a docs/evidence/stream-verification.txt
+              failed=1; continue
+            fi
+            if timeout 18s ffmpeg -hide_banner -loglevel error -i "$url" -t 8 -af volumedetect -f null - 2>/tmp/tmfm-volumedetect.txt; then
+              cat /tmp/tmfm-volumedetect.txt | tee -a docs/evidence/stream-verification.txt
+              if grep -E "mean_volume:|max_volume:" /tmp/tmfm-volumedetect.txt >/dev/null; then
+                echo "DECODE_8S=PASS" | tee -a docs/evidence/stream-verification.txt
+              else
+                echo "DECODE_8S=FAIL_NO_VOLUME_EVIDENCE" | tee -a docs/evidence/stream-verification.txt
+                failed=1
+              fi
+            else
+              echo "DECODE_8S=FAIL_FFMPEG" | tee -a docs/evidence/stream-verification.txt
+              cat /tmp/tmfm-volumedetect.txt | tee -a docs/evidence/stream-verification.txt
+              failed=1
+            fi
           done
-
+          if [ "$failed" -ne 0 ]; then
+            echo "STREAM_VERIFICATION=FAIL" | tee -a docs/evidence/stream-verification.txt
+            exit 1
+          fi
+          echo "STREAM_VERIFICATION=PASS" | tee -a docs/evidence/stream-verification.txt
       - name: Publish APK artifact
         uses: actions/upload-artifact@v4
         with:
