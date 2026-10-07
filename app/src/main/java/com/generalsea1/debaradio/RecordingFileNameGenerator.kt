@@ -1,19 +1,18 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 object RecordingFileNameGenerator {
-    private val formatter = SimpleDateFormat("yyyy-MM-dd — HH-mm-ss", Locale.US)
-
-    fun generate(stationName: String, timestampMillis: Long = System.currentTimeMillis()): String {
-        val safeStation = stationName
-            .trim()
+    fun generate(stationName: String, timestampMillis: Long): String {
+        val date = SimpleDateFormat("yyyy-MM-dd_HH-mm-ss", Locale.US).format(Date(timestampMillis))
+        val safeName = stationName
             .replace(Regex("""[\\/:*?"<>|]"""), "_")
-            .replace(Regex("\\s+"), " ")
-            .ifBlank { "Unknown Station" }
-
-        return safeStation + " — " + formatter.format(Date(timestampMillis)) + ".m4a"
+            .replace(Regex("""\s+"""), " ")
+            .trim()
+            .ifBlank { "Station" }
+            .take(80)
+        return "TMFM_" + safeName + "_" + date + ".m4a"
     }
 }

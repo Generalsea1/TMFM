@@ -1,4 +1,4 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
 object SupabaseConfig {
     const val BASE_URL = "https://sjutgrwdfozrlyiaebai.supabase.co"

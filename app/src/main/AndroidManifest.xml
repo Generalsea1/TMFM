@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <uses-feature
+        android:name="android.hardware.broadcastradio"
+        android:required="false" />
+
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
@@ -12,12 +16,12 @@
     <application
         android:allowBackup="true"
         android:label="@string/app_name"
-        android:icon="@drawable/ic_radio"
-        android:roundIcon="@drawable/ic_radio"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="true"
+        android:usesCleartextTraffic="false"
         android:allowAudioPlaybackCapture="true"
-        android:theme="@style/Theme.TMFMRadio">
+        android:theme="@style/Theme.TMFM">
 
         <activity
             android:name=".MainActivity"
@@ -44,8 +48,8 @@
             android:exported="false" />
 
         <provider
-            android:name="androidx.core.content.FileProvider"
-            android:authorities="${applicationId}.fileprovider"
+            android:name=".RecordingFileProvider"
+            android:authorities="com.generalsea1.tmfm.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
             <meta-data

@@ -1,79 +1,47 @@
-# TMFM Radio
+# TMFM
 
-Production-oriented Android hybrid radio application built in Kotlin + Jetpack Compose + Media3.
+Professional hybrid radio application for Android.
 
-## Current production architecture
+## Product identity
 
-- Internet Radio is the primary radio path for ordinary Android phones.
-- Hardware FM/AM is optional and exposed only when Android reports an actually accessible Broadcast Radio tuner.
-- Recording uses Android playback capture on API 29+ with explicit user consent and stores recordings in an indexed Room library.
-- Station discovery combines verified TMFM/Supabase stations with Radio Browser for broad global discovery.
-- Favorites are persisted locally and legacy DEBA favorites are read for continuity.
-- Background playback is provided by Media3 MediaSessionService.
+The installed application name is **TMFM**. The launcher uses a vintage tabletop-radio mark with modern adaptive-icon support.
 
-## Hardware FM/AM truth
+## Radio architecture
 
-TMFM never fakes FM/AM availability, frequency scans, signal strength, RDS or seek results.
-`HardwareRadioProbe` returns a real capability state. On ordinary devices where the Broadcast Radio stack is unavailable or unauthorized, TMFM gracefully remains an Internet Radio application.
+TMFM separates:
+- hardware Broadcast Radio diagnostics/integration;
+- Internet Radio playback through Media3;
+- local recording library.
 
-A successful APK build is not evidence of FM reception. Real hardware verification requires a physical device whose OEM/system image exposes an accessible tuner.
+The application never fabricates FM frequencies, signal strength, scan results, RDS or tuner availability.
+
+Android exposes Broadcast Radio tuner control as a system-oriented API protected by ACCESS_BROADCAST_RADIO. A normal third-party APK cannot grant itself this privilege. A real FM scan therefore requires a compatible physical device and legitimate OEM/system-level integration.
+
+## Egyptian catalog
+
+Egypt is the first catalog and is bundled for offline availability. The catalog distinguishes verified entries from frequency references and does not invent stream URLs.
+
+The current baseline covers the public Egyptian FM frequencies that were found in current radio-directory references and official broadcaster pages. Frequencies can be region-specific and are labeled accordingly.
+
+## Content policy
+
+TMFM has a deterministic catalog policy that blocks Islamic/Quran religious stations from:
+- the bundled catalog;
+- Supabase catalog results;
+- global Radio Browser discovery;
+- search results;
+- recommendations and favorites.
+
+The physical RF spectrum itself cannot be altered by an application. The app does not identify or promote a station when metadata is unavailable.
 
 ## Recording
 
-On Android 10 (API 29)+, TMFM can request explicit MediaProjection consent and capture TMFM's own media playback through Android's playback-capture API.
+For supported Internet Radio playback on Android 10+, TMFM uses Android playback capture with explicit user consent and encodes AAC audio into M4A files. It does not substitute microphone audio for the stream.
 
-Recordings are saved as:
-
-`[StationName] — [YYYY-MM-DD] — [HH-mm-ss].m4a`
-
-Each completed recording is indexed in Room with station, timestamp, duration, size, path and source metadata. The application provides Play, Share and Delete.
-
-When Android or the user terminates the MediaProjection session, TMFM stops the recording cleanly.
-
-## Station data
-
-### Supabase
-
-Supabase remains the curated source for verified stations, online stations and TMFM-controlled metadata.
-The public client uses the Supabase publishable key only. The current anonymous policy exposes only rows where is_verified=true and is_online=true.
-
-### Radio Browser
-
-Radio Browser provides broad discovery without pretending that those stations are TMFM-verified.
-
-TMFM dynamically discovers API mirrors, keeps HTTPS fallbacks, uses stationuuid as the stable Radio Browser identifier, filters broken stations, searches station name/language/tag/country, and reports a station click when playback starts.
-
-Radio Browser entries are marked as radio_browser and are not displayed as TMFM-verified.
-
-## Search and filters
-
-The UI supports station search, country filtering, favorites, metadata matching on loaded results, and global Radio Browser discovery.
-
-## Build stack
-
-- Android Gradle Plugin 9.4.0
-- Gradle 9.6.0
-- Kotlin / Compose compiler plugin 2.4.10
-- Compose UI 1.10.5
-- Material 3 1.4.0
-- Media3 1.9.4
-- Room 2.8.5
-- KSP 2.3.12
-- AndroidX Core 1.17.0
-- Activity Compose 1.12.4
-- Lifecycle 2.9.4
-- minSdk 26
-- compileSdk 36
-- targetSdk 36
-
-Dependencies are pinned.
+Hardware-FM recording is not claimed unless the target OEM/device legitimately exposes the tuner audio source to the application.
 
 ## Verification policy
 
-Production acceptance is not based on a successful Gradle build alone.
+IMPLEMENTED -> BUILT -> INSTALLED -> TESTED -> VERIFIED -> EVIDENCE
 
-Required evidence:
-
-IMPLEMENTED → BUILT → INSTALLED → TESTED → VERIFIED → EVIDENCE
-
-The CI pipeline verifies compilation, unit tests and lint and publishes the APK artifact. Physical-device validation is still required for runtime audio capture and any Hardware FM/AM capability.
+A successful Gradle build does not prove physical FM capability.

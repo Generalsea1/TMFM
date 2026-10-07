@@ -1,36 +1,81 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
-import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RadioStationTest {
     @Test
-    fun stationMetadataIsPreserved() {
+    fun quranStationIsAlwaysBlocked() {
         val station = RadioStation(
-            id = "test",
-            name = "Test FM",
+            id = "blocked",
+            name = "Quran Radio",
             countryCode = "EG",
             countryName = "مصر",
             city = "Cairo",
-            frequencyMhz = 90.9,
+            frequencyMhz = 98.2,
             band = "FM",
-            streamUrl = "https://example.com/live",
+            streamUrl = "https://example.com/a",
             streamType = "MP3",
-            officialUrl = "https://example.com",
+            officialUrl = null,
             logoUrl = null,
-            language = "العربية",
-            category = "Music",
+            language = "Arabic",
+            category = "Quran",
+            stationType = "FM",
+            isHardware = true,
+            isOnline = true,
+            isVerified = true
+        )
+        assertFalse(RadioCatalogPolicy.allow(station))
+    }
+
+    @Test
+    fun explicitIslamicFlagIsAlwaysBlocked() {
+        val station = RadioStation(
+            id = "blocked",
+            name = "Religious Radio",
+            countryCode = "EG",
+            countryName = "مصر",
+            city = "Cairo",
+            frequencyMhz = null,
+            band = null,
+            streamUrl = "https://example.com/a",
+            streamType = "MP3",
+            officialUrl = null,
+            logoUrl = null,
+            language = "Arabic",
+            category = "Religious",
+            stationType = "Internet",
             isHardware = false,
             isOnline = true,
             isVerified = true,
-            verificationStatus = "verified",
-            lastVerified = "2026-10-07T00:00:00Z"
+            isIslamic = true
         )
+        assertFalse(RadioCatalogPolicy.allow(station))
+    }
 
-        assertEquals("Test FM", station.name)
-        assertEquals(90.9, station.frequencyMhz!!, 0.001)
-        assertEquals("https://example.com/live", station.streamUrl)
-        assertTrue(station.isVerified)
+    @Test
+    fun christianStationIsAllowed() {
+        val station = RadioStation(
+            id = "christian",
+            name = "Christian Radio",
+            countryCode = "EG",
+            countryName = "مصر",
+            city = "Cairo",
+            frequencyMhz = null,
+            band = null,
+            streamUrl = "https://example.com/a",
+            streamType = "MP3",
+            officialUrl = null,
+            logoUrl = null,
+            language = "Arabic",
+            category = "Christian",
+            stationType = "Internet",
+            isHardware = false,
+            isOnline = true,
+            isVerified = true,
+            isChristian = true
+        )
+        assertTrue(RadioCatalogPolicy.allow(station))
     }
 }

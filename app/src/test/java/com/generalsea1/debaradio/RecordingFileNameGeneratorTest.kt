@@ -1,32 +1,20 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class RecordingFileNameGeneratorTest {
     @Test
-    fun generatesRequiredNameAndSanitizesInvalidCharacters() {
-        val name = RecordingFileNameGenerator.generate(
-            stationName = "Test:/FM?",
-            timestampMillis = 0L
-        )
-
-        assertEquals("Test__FM_ — 1970-01-01 — 00-00-00.m4a", name)
-        assertFalse(name.contains(":"))
-        assertFalse(name.contains("/"))
-        assertFalse(name.contains("?"))
+    fun generatedNameIsSafeAndDeterministic() {
+        val name = RecordingFileNameGenerator.generate("محطة/اختبار", 0L)
+        assertEquals("TMFM_محطة_اختبار_1970-01-01_00-00-00.m4a", name)
     }
 
     @Test
-    fun fallsBackWhenStationNameIsBlank() {
-        val name = RecordingFileNameGenerator.generate(
-            stationName = "   ",
-            timestampMillis = 0L
-        )
-
-        assertTrue(name.startsWith("Unknown Station — 1970-01-01"))
+    fun generatedNameStartsWithTmfm() {
+        val name = RecordingFileNameGenerator.generate("Station", 0L)
+        assertTrue(name.startsWith("TMFM_"))
         assertTrue(name.endsWith(".m4a"))
     }
 }

@@ -1,4 +1,4 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
 import androidx.room.Dao
 import androidx.room.Delete
@@ -16,4 +16,7 @@ interface RecordingDao {
 
     @Delete
     suspend fun delete(recording: RecordingEntity)
+
+    @Query("UPDATE recordings SET title = :title WHERE id = :id")
+    suspend fun rename(id: Long, title: String)
 }

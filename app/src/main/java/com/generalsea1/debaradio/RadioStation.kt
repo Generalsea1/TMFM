@@ -1,8 +1,10 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
 data class RadioStation(
     val id: String,
     val name: String,
+    val nameArabic: String? = null,
+    val nameEnglish: String? = null,
     val countryCode: String,
     val countryName: String,
     val city: String?,
@@ -14,9 +16,15 @@ data class RadioStation(
     val logoUrl: String?,
     val language: String?,
     val category: String?,
+    val stationType: String?,
     val isHardware: Boolean,
     val isOnline: Boolean,
     val isVerified: Boolean,
-    val verificationStatus: String,
-    val lastVerified: String?,
+    val isIslamic: Boolean = false,
+    val isChristian: Boolean = false,
+    val verificationStatus: String = "unverified",
+    val lastVerified: String? = null,
+    val source: String? = null,
+    val notes: String? = null,
+    val regionalAvailability: String? = null
 )
