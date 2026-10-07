@@ -43,7 +43,6 @@ object BundledCatalog {
             officialUrl = "https://www.radioswissjazz.ch/",
             language = "Deutsch / Français / Italiano",
             category = "Jazz",
-            stationType = "Internet",
             isVerified = false,
             verificationStatus = "stream_pending_external_verification",
             lastVerified = "2026-10-07",

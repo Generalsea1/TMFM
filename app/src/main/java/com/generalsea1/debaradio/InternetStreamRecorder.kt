@@ -272,21 +272,29 @@ private class HlsStreamRecorder(
         )
     }
 
-    private fun fetchText(url: String): String =
-        fetchConnection(url).use { connection ->
+    private fun fetchText(url: String): String {
+        val connection = fetchConnection(url)
+        return try {
             if (connection.responseCode !in 200..299) {
                 error("HLS HTTP " + connection.responseCode)
             }
             connection.inputStream.bufferedReader().use { it.readText() }
+        } finally {
+            connection.disconnect()
         }
+    }
 
-    private fun fetchBytes(url: String): ByteArray =
-        fetchConnection(url).use { connection ->
+    private fun fetchBytes(url: String): ByteArray {
+        val connection = fetchConnection(url)
+        return try {
             if (connection.responseCode !in 200..299) {
                 error("HLS segment HTTP " + connection.responseCode)
             }
             connection.inputStream.use { it.readBytes() }
+        } finally {
+            connection.disconnect()
         }
+    }
 
     private fun fetchConnection(url: String): HttpURLConnection =
         (URI.create(url).toURL().openConnection() as HttpURLConnection).apply {
