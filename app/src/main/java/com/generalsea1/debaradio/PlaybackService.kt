@@ -97,6 +97,10 @@ class PlaybackService : MediaSessionService() {
         if (minutes <= 0) return
 
         val task = Runnable {
+            startService(
+                android.content.Intent(this, RecordingService::class.java)
+                    .setAction(RecordingService.ACTION_STOP)
+            )
             mediaSession?.player?.stop()
             mediaSession?.player?.clearMediaItems()
             sleepRunnable = null

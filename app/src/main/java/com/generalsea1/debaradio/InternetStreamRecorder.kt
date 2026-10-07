@@ -174,7 +174,26 @@ private class HlsStreamRecorder(
         val downloadedSequences = HashSet<Long>()
 
         while (!shouldStop()) {
-            val playlist = fetchText(playlistUrl)
+            var effectivePlaylistUrl = playlistUrl
+            var playlist = fetchText(effectivePlaylistUrl)
+
+            if (playlist.contains("#EXT-X-STREAM-INF:")) {
+                val lines = playlist.lineSequence()
+                    .map(String::trim)
+                    .filter(String::isNotBlank)
+                    .toList()
+                var variant: String? = null
+                for (i in lines.indices) {
+                    if (lines[i].startsWith("#EXT-X-STREAM-INF:")) {
+                        variant = lines.drop(i + 1).firstOrNull { !it.startsWith("#") }
+                        if (variant != null) break
+                    }
+                }
+                if (variant == null) error("تعذر اختيار مسار HLS صالح.")
+                effectivePlaylistUrl = URI.create(playlistUrl).resolve(variant).toString()
+                playlist = fetchText(effectivePlaylistUrl)
+            }
+
             if (playlist.contains("#EXT-X-KEY:") && !playlist.contains("METHOD=NONE")) {
                 error("هذا HLS يستخدم تشفيرًا أو حماية تمنع TMFM من تسجيله بأمان.")
             }
@@ -184,7 +203,7 @@ private class HlsStreamRecorder(
                 .filter(String::isNotBlank)
                 .toList()
 
-            val base = URI.create(playlistUrl)
+            val base = URI.create(effectivePlaylistUrl)
             var mediaSequence = 0L
             var mapUrl: String? = null
             var sequence = 0L

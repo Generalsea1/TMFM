@@ -700,8 +700,18 @@ private fun StationDialog(
                 station.category?.let { Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    if (station.streamUrl.isNullOrBlank()) "تردد/دليل فقط؛ لا يوجد بث إنترنت موثق داخل TMFM."
-                    else "بث إنترنت متاح للتشغيل والتسجيل المحلي.",
+                    when (station.classification()) {
+                        StationClassification.PLAYABLE_INTERNET ->
+                            "بث إنترنت مثبت خارجيًا؛ التشغيل والتسجيل المباشر متاحان."
+                        StationClassification.VERIFIED_FREQUENCY ->
+                            "تردد FM موثّق؛ تشغيله يحتاج tuner حقيقيًا مكشوفًا للنظام/OEM."
+                        StationClassification.DIRECTORY_REFERENCE ->
+                            "تردد مرجعي فقط؛ لا يوجد بث إنترنت موثّق."
+                        StationClassification.OFFLINE ->
+                            "البث غير متاح حاليًا."
+                        StationClassification.UNVERIFIED ->
+                            "هذه المحطة لم تُثبت بعد، ولذلك لا تظهر كقابلة للتشغيل."
+                    },
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
