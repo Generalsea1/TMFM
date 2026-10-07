@@ -289,6 +289,54 @@ fun TmfmRadioScreen(
 private fun HardwareCard() {
     val context = LocalContext.current
     val status = remember(context) { HardwareRadioProbe.detect(context) }
+    var snapshot by remember { mutableStateOf<HardwareRadioSnapshot?>(null) }
+    var controllerError by remember { mutableStateOf<String?>(null) }
+    var band by remember { mutableStateOf(if (status.fm) "FM" else "AM") }
+    var frequency by remember { mutableStateOf(if (status.fm) "99.10" else "1000") }
+
+    val controller = remember(status.accessible) {
+        if (status.accessible && Build.VERSION.SDK_INT >= 28) {
+            HardwareRadioController(
+                context = context,
+                listener = object : HardwareRadioController.Listener {
+                    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+
+                    override fun onProgramChanged(value: HardwareRadioSnapshot) {
+                        main.post { snapshot = value }
+                    }
+
+                    override fun onAntennaChanged(connected: Boolean) {
+                        main.post {
+                            snapshot = snapshot?.copy(antennaConnected = connected)
+                        }
+                    }
+
+                    override fun onControlChanged(control: Boolean) {
+                        if (!control) {
+                            main.post { controllerError = "فقد التطبيق التحكم في الـtuner." }
+                        }
+                    }
+
+                    override fun onTuneFailed(message: String) {
+                        main.post { controllerError = message }
+                    }
+
+                    override fun onError(message: String) {
+                        main.post { controllerError = message }
+                    }
+                }
+            )
+        } else null
+    }
+
+    androidx.compose.runtime.DisposableEffect(controller) {
+        if (controller != null && !controller.open()) {
+            controllerError = "تعذر فتح موالف الراديو رغم اكتشاف القدرة."
+        }
+        onDispose { controller?.close() }
+    }
+
+    val current = snapshot
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Panel),
@@ -301,21 +349,24 @@ private fun HardwareCard() {
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("الراديو الهوائي", style = MaterialTheme.typography.titleMedium)
-                Text(
-                    if (status.accessible) "متاح" else "غير متاح",
-                    color = if (status.accessible) Accent else Muted
-                )
+                Column {
+                    Text("الراديو الهوائي", style = MaterialTheme.typography.titleMedium)
+                    Text(
+                        if (status.accessible) "Tuner فعلي" else "غير متاح",
+                        color = if (status.accessible) Accent else Muted
+                    )
+                }
+                if (status.accessible) {
+                    Text(
+                        current?.band ?: band,
+                        color = Accent,
+                        style = MaterialTheme.typography.titleLarge
+                    )
+                }
             }
+
             Spacer(Modifier.height(4.dp))
             Text(status.detail, color = Muted)
-
-            Spacer(Modifier.height(6.dp))
-            Text(
-                "FM: " + if (status.fm) "نعم" else "لا" +
-                    " • AM: " + if (status.am) "نعم" else "لا",
-                color = Muted
-            )
 
             if (!status.accessible) {
                 Spacer(Modifier.height(4.dp))
@@ -323,7 +374,155 @@ private fun HardwareCard() {
                     "سيعمل TMFM كراديو إنترنت؛ لا يتم عرض ماسح FM/AM أو قوة إشارة وهمية.",
                     color = Muted
                 )
+            } else {
+                Spacer(Modifier.height(10.dp))
+
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (status.fm) {
+                        FilterChip(
+                            selected = band == "FM",
+                            onClick = { band = "FM" },
+                            label = { Text("FM") }
+                        )
+                    }
+                    if (status.am) {
+                        FilterChip(
+                            selected = band == "AM",
+                            onClick = { band = "AM" },
+                            label = { Text("AM") }
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedTextField(
+                    value = frequency,
+                    onValueChange = {
+                        frequency = it.filter { character -> character.isDigit() || character == '.' }.take(8)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    label = {
+                        Text(
+                            if (band == "FM") {
+                                "تردد FM بالميجاهرتز"
+                            } else {
+                                "تردد AM بالكيلوهرتز"
+                            }
+                        )
+                    }
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Button(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            controllerError = null
+                            runCatching {
+                                if (band == "FM") {
+                                    controller?.tuneFm(frequency.toDouble())
+                                } else {
+                                    controller?.tuneAm(frequency.toInt())
+                                }
+                            }.onFailure {
+                                controllerError = it.message ?: "تعذر ضبط التردد."
+                            }
+                        }
+                    ) { Text("ضبط") }
+
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            controllerError = null
+                            controller?.seekDown()
+                        }
+                    ) { Text("بحث ↓") }
+
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = {
+                            controllerError = null
+                            controller?.seekUp()
+                        }
+                    ) { Text("بحث ↑") }
+                }
+
+                Spacer(Modifier.height(6.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = { controller?.stepDown() }
+                    ) { Text("خطوة ↓") }
+
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = { controller?.stepUp() }
+                    ) { Text("خطوة ↑") }
+
+                    OutlinedButton(
+                        modifier = Modifier.weight(1f),
+                        onClick = { controller?.setMuted(true) }
+                    ) { Text("كتم") }
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                val tunedFrequency = current?.frequencyMhz?.let {
+                    if (current.band == "FM") {
+                        String.format(Locale.US, "%.2f MHz", it)
+                    } else {
+                        String.format(Locale.US, "%.0f kHz", it * 1000.0)
+                    }
+                } ?: "—"
+
+                Text(
+                    "التردد: " + tunedFrequency +
+                        " • الإشارة: " + (current?.signalStrength?.toString() ?: "—") + "/100",
+                    color = Muted
+                )
+
+                Text(
+                    "الهوائي: " +
+                        when (current?.antennaConnected) {
+                            true -> "متصل"
+                            false -> "غير متصل"
+                            null -> "غير معروف"
+                        } +
+                        " • " +
+                        if (current?.stereo == true) "Stereo" else "Mono",
+                    color = Muted
+                )
+
+                current?.stationName?.takeIf { it.isNotBlank() }?.let {
+                    Text("RDS: " + it, color = TextPrimary)
+                }
+
+                current?.radioText?.takeIf { it.isNotBlank() }?.let {
+                    Text("RadioText: " + it, color = Muted)
+                }
+
+                if (controllerError != null) {
+                    Spacer(Modifier.height(6.dp))
+                    Text(controllerError ?: "", color = TextPrimary)
+                }
             }
+
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "FM: " + if (status.fm) "نعم" else "لا" +
+                    " • AM: " + if (status.am) "نعم" else "لا",
+                color = Muted
+            )
         }
     }
 }
