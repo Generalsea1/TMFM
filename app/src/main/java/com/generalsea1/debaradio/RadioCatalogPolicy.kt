@@ -1,5 +1,6 @@
 package com.generalsea1.tmfm
 
+import java.text.Normalizer
 import java.util.Locale
 
 object RadioCatalogPolicy {
@@ -14,11 +15,19 @@ object RadioCatalogPolicy {
     fun allow(station: RadioStation): Boolean {
         if (station.isIslamic) return false
         if (station.isChristian) return true
+
         val text = listOfNotNull(
-            station.name, station.nameArabic, station.nameEnglish,
-            station.category, station.stationType, station.notes
-        ).joinToString(" ").lowercase(Locale.ROOT)
-        return forbiddenTokens.none { text.contains(it) }
+            station.name,
+            station.nameArabic,
+            station.nameEnglish,
+            station.category,
+            station.broadcastType.name,
+            station.notes
+        ).joinToString(" ")
+            .lowercase(Locale.ROOT)
+
+        val normalized = Normalizer.normalize(text, Normalizer.Form.NFKC)
+        return forbiddenTokens.none { normalized.contains(it) }
     }
 
     fun filter(stations: Iterable<RadioStation>): List<RadioStation> =
