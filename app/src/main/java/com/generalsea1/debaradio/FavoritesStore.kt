@@ -1,9 +1,9 @@
-package com.generalsea1.debaradio
+package com.generalsea1.tmfm
 
 import android.content.Context
 
 class FavoritesStore(context: Context) {
-    private val prefs = context.getSharedPreferences("deba_radio", Context.MODE_PRIVATE)
+    private val prefs = context.getSharedPreferences("tmfm_radio", Context.MODE_PRIVATE)
 
     fun getFavorites(): Set<String> =
         prefs.getStringSet("favorites", emptySet())?.toSet() ?: emptySet()
@@ -17,6 +17,4 @@ class FavoritesStore(context: Context) {
     fun setLastStationId(id: String) {
         prefs.edit().putString("last_station", id).apply()
     }
-
-    fun getLastStationId(): String? = prefs.getString("last_station", null)
 }

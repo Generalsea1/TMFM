@@ -1,61 +1,47 @@
-# TMFM — Radio
+# TMFM
 
-Android radio application built in Kotlin + Jetpack Compose + Media3.
+Professional hybrid radio application for Android.
 
-## Implemented now
+## Product identity
 
-- Internet Radio playback using Media3/ExoPlayer.
-- Background playback through MediaSessionService.
-- Android media notification and lock-screen controls supplied by Media3.
-- Favorites persisted locally.
-- Search by station, country, city, frequency, language and category.
-- Country filtering.
-- Sleep timer.
-- Supabase-hosted station catalog with RLS.
-- Device-side Broadcast Radio capability probe.
-- GitHub Actions build pipeline producing a real APK artifact.
+The installed application name is **TMFM**. The launcher uses a vintage tabletop-radio mark with modern adaptive-icon support.
 
-## Hardware FM/AM truth
+## Radio architecture
 
-Android's Broadcast Radio stack only works when the device/OEM exposes a compatible tuner stack. The system APIs are protected/system-oriented on many consumer phones. TMFMRadio therefore probes actual system availability and never fakes frequency scanning, signal strength or reception.
+TMFM separates:
+- hardware Broadcast Radio diagnostics/integration;
+- Internet Radio playback through Media3;
+- local recording library.
 
-A successful application build does NOT prove FM reception on a physical phone. Real FM verification requires a compatible physical device that actually exposes an accessible tuner.
+The application never fabricates FM frequencies, signal strength, scan results, RDS or tuner availability.
 
-## Station-data policy
+Android exposes Broadcast Radio tuner control as a system-oriented API protected by ACCESS_BROADCAST_RADIO. A normal third-party APK cannot grant itself this privilege. A real FM scan therefore requires a compatible physical device and legitimate OEM/system-level integration.
 
-The app reads only records where is_verified=true and is_online=true. The catalog is designed to be expanded and corrected without rebuilding the APK.
+## Egyptian catalog
 
-The current seed contains a small verified set. It does not claim all Egyptian stations or global completeness. Unknown, broken, or unverified stations are intentionally excluded from the public app response.
+Egypt is the first catalog and is bundled for offline availability. The catalog distinguishes verified entries from frequency references and does not invent stream URLs.
 
-## Supabase
+The current baseline covers the public Egyptian FM frequencies that were found in current radio-directory references and official broadcaster pages. Frequencies can be region-specific and are labeled accordingly.
 
-Project: sjutgrwdfozrlyiaebai
+## Content policy
 
-Table: public.radio_stations
+TMFM has a deterministic catalog policy that blocks Islamic/Quran religious stations from:
+- the bundled catalog;
+- Supabase catalog results;
+- global Radio Browser discovery;
+- search results;
+- recommendations and favorites.
 
-RLS is enabled. Anonymous clients can only SELECT records that are both verified and online. Anonymous clients have SELECT access only; INSERT, UPDATE and DELETE are revoked.
+The physical RF spectrum itself cannot be altered by an application. The app does not identify or promote a station when metadata is unavailable.
 
-Client code uses the publishable Supabase key only.
+## Recording
 
-## Build stack
+For supported Internet Radio playback on Android 10+, TMFM uses Android playback capture with explicit user consent and encodes AAC audio into M4A files. It does not substitute microphone audio for the stream.
 
-- Android Gradle Plugin 9.4.0
-- Gradle 9.6.0
-- Kotlin/Compose compiler plugin 2.4.10
-- Compose UI 1.10.5
-- Material 3 1.4.0
-- Media3 1.9.4
-- AndroidX Core 1.17.0
-- Activity Compose 1.12.4
-- Lifecycle 2.9.4
-- minSdk 26
-- compileSdk 36
-- targetSdk 36
+Hardware-FM recording is not claimed unless the target OEM/device legitimately exposes the tuner audio source to the application.
 
-Versions are pinned; the build does not use dynamic dependency versions.
+## Verification policy
 
-## CI deliverable
+IMPLEMENTED -> BUILT -> INSTALLED -> TESTED -> VERIFIED -> EVIDENCE
 
-.github/workflows/build.yml builds app-debug.apk and uploads it as the TmFM-radio-debug-apk GitHub Actions artifact while printing SHA-256.
-
-The CI build verifies compilation and unit tests. It cannot perform real FM hardware verification on a physical phone.
+A successful Gradle build does not prove physical FM capability.
