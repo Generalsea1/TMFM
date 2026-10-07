@@ -8,8 +8,6 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
@@ -19,7 +17,6 @@
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:usesCleartextTraffic="false"
-        android:allowAudioPlaybackCapture="true"
         android:theme="@style/Theme.TMFM">
 
         <activity
@@ -43,7 +40,7 @@
 
         <service
             android:name=".RecordingService"
-            android:foregroundServiceType="mediaProjection"
+            android:foregroundServiceType="mediaPlayback"
             android:exported="false" />
 
         <provider
