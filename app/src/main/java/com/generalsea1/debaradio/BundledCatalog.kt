@@ -49,7 +49,8 @@ object BundledCatalog {
             isVerified = true,
             verificationStatus = "verified",
             lastVerified = "2026-10-07",
-            source = "official-stream"
+            source = "official-stream",
+            logoUrl = null
         )
     )
 
