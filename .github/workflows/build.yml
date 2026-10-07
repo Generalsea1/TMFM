@@ -26,14 +26,14 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          mkdir -p "$HOME/android-sdk/cmdline-tools"
+          export ANDROID_HOME="${ANDROID_SDK_ROOT:-$HOME/android-sdk}"
+          mkdir -p "$ANDROID_HOME/cmdline-tools"
           curl -fsSL -o /tmp/cmdline-tools.zip https://dl.google.com/android/repository/commandlinetools-linux-15859902_latest.zip
           echo "4e4c464f145a7512b57d088ac6c278c03c9eea610886b35a5e0804e74eedf583  /tmp/cmdline-tools.zip" | sha256sum -c -
-          rm -rf "$HOME/android-sdk/cmdline-tools/latest"
-          mkdir -p "$HOME/android-sdk/cmdline-tools/latest"
+          rm -rf "$ANDROID_HOME/cmdline-tools/latest"
+          mkdir -p "$ANDROID_HOME/cmdline-tools/latest"
           unzip -q /tmp/cmdline-tools.zip -d /tmp/android-cmdline
-          mv /tmp/android-cmdline/cmdline-tools/* "$HOME/android-sdk/cmdline-tools/latest/"
-          export ANDROID_HOME="$HOME/android-sdk"
+          mv /tmp/android-cmdline/cmdline-tools/* "$ANDROID_HOME/cmdline-tools/latest/"
           export PATH="$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools:$PATH"
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
           sdkmanager "platform-tools" "platforms;android-36" "build-tools;36.0.0"
