@@ -8,6 +8,7 @@ import androidx.media3.common.C
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.session.MediaSession
 import androidx.media3.session.MediaSessionService
+import androidx.media3.session.MediaSession.ControllerInfo
 
 class PlaybackService : MediaSessionService() {
     private var mediaSession: MediaSession? = null
